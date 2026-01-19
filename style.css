@@ -1,4 +1,4 @@
-/* wrenchbox - Phase 1 Styles (Tone.js) */
+/* wrenchbox - Phase 2 Styles (Drag-Drop, Mute/Solo) */
 
 * {
     margin: 0;
@@ -286,4 +286,157 @@ body {
     border-radius: 4px;
     font-size: 0.7em;
     color: var(--text-muted);
+}
+
+/* ========================================
+   Phase 2: Drag-Drop & Mute/Solo Styles
+   ======================================== */
+
+/* Empty slot state */
+.slot.empty {
+    border-style: dashed;
+    border-color: #444;
+    background: rgba(30, 30, 50, 0.5);
+}
+
+.slot.empty:hover {
+    border-color: var(--accent);
+    background: rgba(0, 255, 255, 0.1);
+}
+
+.slot.empty .slot-icon {
+    opacity: 0.3;
+    font-size: 0.8em;
+}
+
+/* Slot content wrapper */
+.slot-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.slot-icon {
+    font-size: 1em;
+    line-height: 1;
+}
+
+/* Slot controls (mute/solo buttons) */
+.slot-controls {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.slot:not(.empty):hover .slot-controls,
+.slot.muted .slot-controls,
+.slot.soloed .slot-controls {
+    opacity: 1;
+}
+
+.slot-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    font-size: 0.6em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: rgba(50, 50, 70, 0.9);
+    color: var(--text-muted);
+}
+
+.slot-btn:hover {
+    background: rgba(70, 70, 100, 1);
+    color: var(--text);
+}
+
+/* Mute button active state */
+.slot.muted .mute-btn {
+    background: #ff4444;
+    color: white;
+}
+
+/* Solo button active state */
+.slot.soloed .solo-btn {
+    background: #ffdd44;
+    color: #222;
+}
+
+/* Muted slot visual */
+.slot.muted {
+    opacity: 0.5;
+}
+
+.slot.muted::after {
+    display: none;
+}
+
+/* Soloed slot visual - brighter glow */
+.slot.soloed {
+    box-shadow: 0 0 40px rgba(255, 221, 68, 0.7) !important;
+}
+
+/* Drag states */
+.sound-icon.dragging {
+    opacity: 0.5;
+    transform: scale(0.9);
+}
+
+.sound-icon[draggable="true"] {
+    cursor: grab;
+}
+
+.sound-icon[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.slot.dragging {
+    opacity: 0.5;
+}
+
+.slot.drag-over {
+    border-color: var(--accent) !important;
+    border-style: solid !important;
+    background: rgba(0, 255, 255, 0.2) !important;
+    transform: scale(1.1);
+}
+
+/* Body state during drag */
+body.is-dragging .slot.empty {
+    border-color: var(--accent);
+    animation: pulse-drop 0.8s infinite;
+}
+
+@keyframes pulse-drop {
+    0%, 100% { border-color: #444; }
+    50% { border-color: var(--accent); }
+}
+
+/* Remove zone (palette when dragging from slot) */
+.palette.remove-zone-active {
+    background: rgba(255, 68, 68, 0.3);
+    border: 2px dashed #ff4444;
+}
+
+/* Slot label positioning adjustment for controls */
+.slot:not(.empty) .slot-label {
+    bottom: -55px;
+}
+
+/* Draggable slots */
+.slot[draggable="true"] {
+    cursor: grab;
+}
+
+.slot[draggable="true"]:active {
+    cursor: grabbing;
 }

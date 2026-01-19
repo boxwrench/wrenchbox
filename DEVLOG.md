@@ -145,6 +145,49 @@ lead    | MonoSynth        | Square wave + filter
 
 ---
 
+### 2026-01-18 - Phase 2: Incredibox Core
+
+**What was done:**
+- Saved Phase 1 milestone to `phases/01-foundation/` with git tag `v0.1.0-phase1`
+- Implemented drag-drop interface:
+  - Created `src/ui/DragDrop.js` - HTML5 Drag and Drop handler
+  - Palette icons draggable to slots
+  - Slots draggable to other slots (move) or palette (remove)
+- Added mute/solo controls:
+  - M button per slot toggles mute (volume 0, pattern keeps playing)
+  - S button toggles solo (mutes all others)
+  - Only one slot can be soloed at a time
+- Slots now empty by default (drop sounds to assign)
+- Quantized activation: sounds start on next bar boundary
+- Keyboard shortcuts: 1-7 mute slots, Space/Esc reset
+
+**Files created:**
+- `src/ui/DragDrop.js` - Drag-drop handler class
+- `phases/01-foundation/` - Phase 1 milestone snapshot
+
+**Files modified:**
+- `src/main.js` - Complete rewrite for Phase 2 mechanics
+- `style.css` - Drag states, mute/solo buttons, empty slot styling
+- `index.html` - Added DragDrop.js script, updated phase badge
+
+**Phase 2 Features Checklist:**
+- [x] Drag icon from palette to slot
+- [x] Drag slot to palette to remove
+- [x] Drag slot to slot to move/swap
+- [x] Mute button (M) - slot plays silently
+- [x] Solo button (S) - mute all other slots
+- [x] Quantized start (sounds begin on next bar)
+- [x] Empty slots by default
+- [x] Visual feedback during drag
+
+**Next steps:**
+- Test Phase 2 in browser
+- Begin Phase 3: Sample-based audio (Tone.Player)
+
+**Blocking issues:** None
+
+---
+
 ## Architecture Notes
 
 ```

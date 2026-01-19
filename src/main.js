@@ -1,18 +1,18 @@
 /**
  * wrenchbox - Main Application
- * Phase 1: Click-to-toggle interface with Tone.js
+ * Phase 2: Drag-drop interface with mute/solo
  *
  * Learning goals:
- * - DOM manipulation
- * - Event handling
- * - Async audio initialization
- * - Connecting UI to Tone.js-based audio engine
+ * - Drag-drop integration
+ * - Mute/solo state management
+ * - Quantized sound activation
  */
 
 // App state
 const state = {
-    slots: [], // { id, soundName, element, active }
-    initialized: false
+    slots: [], // { id, soundName, element, active, muted, soloed }
+    initialized: false,
+    soloedSlotId: null // Track which slot is soloed (only one at a time)
 };
 
 // Config
@@ -21,7 +21,7 @@ const CONFIG = {
     BPM: 120
 };
 
-// Icons for sounds (Phase 1: emoji, Phase 2+: SVG)
+// Icons for sounds
 const SOUND_ICONS = {
     kick: '🥁',
     snare: '🪘',
@@ -31,18 +31,16 @@ const SOUND_ICONS = {
 };
 
 /**
- * Initialize the app (called on DOMContentLoaded)
+ * Initialize the app
  */
 function init() {
-    // Set up the start overlay click handler
     const overlay = document.getElementById('startOverlay');
     overlay.addEventListener('click', handleStart);
-
     console.log('[wrenchbox] Ready - click to start');
 }
 
 /**
- * Handle start overlay click - initialize audio and show app
+ * Handle start overlay click
  */
 async function handleStart() {
     if (state.initialized) return;
@@ -51,68 +49,57 @@ async function handleStart() {
     const app = document.getElementById('app');
 
     try {
-        // Initialize Tone.js audio context (must be after user gesture)
         await audioEngine.init();
 
-        // Create sequencer with audio engine
         window.sequencer = new Sequencer(audioEngine, CONFIG.BPM);
         sequencer.init();
 
-        // Build UI
         createSlots();
         createSoundIcons();
+        setupDragDrop();
         setupEventListeners();
-
-        // Update BPM display
         updateBpmDisplay();
 
-        // Hide overlay, show app
         overlay.style.display = 'none';
         app.style.display = 'flex';
 
         state.initialized = true;
-        console.log('[wrenchbox] Initialized with Tone.js');
+        console.log('[wrenchbox] Phase 2: Drag-drop ready');
     } catch (err) {
-        console.error('[wrenchbox] Failed to initialize audio:', err);
+        console.error('[wrenchbox] Failed to initialize:', err);
     }
 }
 
 /**
- * Create character slots
+ * Create empty character slots
  */
 function createSlots() {
     const container = document.getElementById('slots');
-    const sounds = Sequencer.getSoundNames();
 
     for (let i = 0; i < CONFIG.NUM_SLOTS; i++) {
         const slot = document.createElement('div');
-        slot.className = 'slot';
+        slot.className = 'slot empty';
         slot.dataset.slotId = i;
 
-        // Phase 1: Pre-assign sounds to slots for simplicity
-        // Phase 2+: Slots will be empty until drag-drop
-        if (i < sounds.length) {
-            const soundName = sounds[i];
-            const sound = Sequencer.getSound(soundName);
-            slot.dataset.soundName = soundName;
-            slot.dataset.type = sound.type;
-            slot.innerHTML = `
-                ${SOUND_ICONS[soundName]}
-                <span class="slot-label">${soundName}</span>
-                <div class="beat-indicator"></div>
-            `;
-        } else {
-            slot.innerHTML = `
-                <span style="opacity: 0.3">+</span>
-                <span class="slot-label">empty</span>
-            `;
-        }
+        slot.innerHTML = `
+            <div class="slot-content">
+                <span class="slot-icon">+</span>
+            </div>
+            <span class="slot-label">drop sound</span>
+            <div class="slot-controls">
+                <button class="slot-btn mute-btn" title="Mute (click)">M</button>
+                <button class="slot-btn solo-btn" title="Solo (S)">S</button>
+            </div>
+            <div class="beat-indicator"></div>
+        `;
 
         state.slots.push({
             id: i,
-            soundName: i < sounds.length ? sounds[i] : null,
+            soundName: null,
             element: slot,
-            active: false
+            active: false,
+            muted: false,
+            soloed: false
         });
 
         container.appendChild(slot);
@@ -121,8 +108,6 @@ function createSlots() {
 
 /**
  * Create sound icons in palette
- * Phase 1: Visual only (shows what sounds exist)
- * Phase 2: Will be draggable
  */
 function createSoundIcons() {
     const container = document.getElementById('soundIcons');
@@ -135,9 +120,192 @@ function createSoundIcons() {
         icon.dataset.soundName = soundName;
         icon.dataset.type = sound.type;
         icon.innerHTML = SOUND_ICONS[soundName];
-        icon.title = soundName;
+        icon.title = `Drag ${soundName} to a slot`;
 
         container.appendChild(icon);
+    }
+}
+
+/**
+ * Set up drag-drop functionality
+ */
+function setupDragDrop() {
+    window.dragDrop = new DragDrop({
+        onDrop: (slotId, soundName) => assignSoundToSlot(slotId, soundName),
+        onRemove: (slotId) => removeSoundFromSlot(slotId)
+    });
+    dragDrop.init();
+}
+
+/**
+ * Assign a sound to a slot
+ */
+function assignSoundToSlot(slotId, soundName) {
+    const slot = state.slots[slotId];
+    if (!slot) return;
+
+    const sound = Sequencer.getSound(soundName);
+    if (!sound) return;
+
+    // If slot already has a sound, stop it first
+    if (slot.active) {
+        sequencer.stopPattern(slotId);
+    }
+
+    // Update state
+    slot.soundName = soundName;
+    slot.active = true;
+    slot.muted = false;
+
+    // Update UI
+    const slotEl = slot.element;
+    slotEl.classList.remove('empty');
+    slotEl.classList.add('active');
+    slotEl.dataset.soundName = soundName;
+    slotEl.dataset.type = sound.type;
+
+    const iconEl = slotEl.querySelector('.slot-icon');
+    const labelEl = slotEl.querySelector('.slot-label');
+    iconEl.textContent = SOUND_ICONS[soundName];
+    labelEl.textContent = soundName;
+
+    // Make slot draggable
+    dragDrop.updateSlotDraggable(slotEl, true);
+
+    // Start the pattern (quantized to next bar)
+    startPatternQuantized(slotId, soundName);
+
+    // Apply current solo state
+    updateMuteStates();
+
+    console.log('[wrenchbox] Assigned', soundName, 'to slot', slotId);
+}
+
+/**
+ * Remove sound from a slot
+ */
+function removeSoundFromSlot(slotId) {
+    const slot = state.slots[slotId];
+    if (!slot || !slot.soundName) return;
+
+    // Stop the pattern
+    if (slot.active) {
+        sequencer.stopPattern(slotId);
+    }
+
+    // If this slot was soloed, clear solo
+    if (state.soloedSlotId === slotId) {
+        state.soloedSlotId = null;
+    }
+
+    // Update state
+    const oldSound = slot.soundName;
+    slot.soundName = null;
+    slot.active = false;
+    slot.muted = false;
+    slot.soloed = false;
+
+    // Update UI
+    const slotEl = slot.element;
+    slotEl.classList.add('empty');
+    slotEl.classList.remove('active', 'muted', 'soloed');
+    delete slotEl.dataset.soundName;
+    delete slotEl.dataset.type;
+
+    const iconEl = slotEl.querySelector('.slot-icon');
+    const labelEl = slotEl.querySelector('.slot-label');
+    iconEl.textContent = '+';
+    labelEl.textContent = 'drop sound';
+
+    // Make slot not draggable
+    dragDrop.updateSlotDraggable(slotEl, false);
+
+    // Update mute states for remaining slots
+    updateMuteStates();
+
+    console.log('[wrenchbox] Removed', oldSound, 'from slot', slotId);
+}
+
+/**
+ * Start pattern quantized to next bar
+ */
+function startPatternQuantized(slotId, soundName) {
+    const slot = state.slots[slotId];
+
+    // Schedule start at next bar boundary
+    const startTime = Tone.Transport.nextSubdivision('1m');
+
+    Tone.Transport.scheduleOnce((time) => {
+        if (slot.soundName === soundName && slot.active) {
+            sequencer.startPattern(slotId, soundName);
+        }
+    }, startTime);
+
+    // Ensure transport is running
+    if (Tone.Transport.state !== 'started') {
+        Tone.Transport.start();
+    }
+}
+
+/**
+ * Toggle mute on a slot
+ */
+function toggleMute(slotId) {
+    const slot = state.slots[slotId];
+    if (!slot || !slot.soundName) return;
+
+    slot.muted = !slot.muted;
+    audioEngine.muteSlot(slotId, slot.muted);
+
+    slot.element.classList.toggle('muted', slot.muted);
+
+    console.log('[wrenchbox] Slot', slotId, slot.muted ? 'muted' : 'unmuted');
+}
+
+/**
+ * Toggle solo on a slot (exclusive - only one at a time)
+ */
+function toggleSolo(slotId) {
+    const slot = state.slots[slotId];
+    if (!slot || !slot.soundName) return;
+
+    if (state.soloedSlotId === slotId) {
+        // Unsolo
+        state.soloedSlotId = null;
+        slot.soloed = false;
+        slot.element.classList.remove('soloed');
+    } else {
+        // Solo this slot, unsolo previous
+        if (state.soloedSlotId !== null) {
+            const prevSlot = state.slots[state.soloedSlotId];
+            prevSlot.soloed = false;
+            prevSlot.element.classList.remove('soloed');
+        }
+
+        state.soloedSlotId = slotId;
+        slot.soloed = true;
+        slot.element.classList.add('soloed');
+    }
+
+    updateMuteStates();
+    console.log('[wrenchbox] Solo:', state.soloedSlotId !== null ? `slot ${state.soloedSlotId}` : 'off');
+}
+
+/**
+ * Update mute states based on solo
+ */
+function updateMuteStates() {
+    for (const slot of state.slots) {
+        if (!slot.soundName) continue;
+
+        let shouldMute = slot.muted;
+
+        // If any slot is soloed, mute all others (unless explicitly muted)
+        if (state.soloedSlotId !== null && slot.id !== state.soloedSlotId) {
+            shouldMute = true;
+        }
+
+        audioEngine.muteSlot(slot.id, shouldMute);
     }
 }
 
@@ -145,52 +313,45 @@ function createSoundIcons() {
  * Set up event listeners
  */
 function setupEventListeners() {
-    // Slot clicks
+    // Slot control clicks (mute/solo buttons)
     document.getElementById('slots').addEventListener('click', (e) => {
+        const muteBtn = e.target.closest('.mute-btn');
+        const soloBtn = e.target.closest('.solo-btn');
         const slot = e.target.closest('.slot');
-        if (slot) {
-            handleSlotClick(parseInt(slot.dataset.slotId));
+
+        if (!slot) return;
+        const slotId = parseInt(slot.dataset.slotId);
+
+        if (muteBtn) {
+            toggleMute(slotId);
+        } else if (soloBtn) {
+            toggleSolo(slotId);
         }
+        // Note: clicking slot itself does nothing in Phase 2 (use drag to add/remove)
     });
 
     // Reset button
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        resetAll();
-    });
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
 
-    // Keyboard shortcuts (1-5 for slots, space for reset)
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        const key = e.key;
+        const key = e.key.toLowerCase();
+
+        // M to mute focused/hovered slot
+        // S to solo focused/hovered slot
+        // 1-7 to toggle mute on specific slot
+        // Space/Escape to reset
+
         if (key >= '1' && key <= '7') {
             const slotId = parseInt(key) - 1;
-            if (slotId < state.slots.length) {
-                handleSlotClick(slotId);
+            if (slotId < state.slots.length && state.slots[slotId].soundName) {
+                toggleMute(slotId);
             }
-        } else if (key === ' ' || key === 'Escape') {
+        } else if (key === ' ' || key === 'escape') {
             e.preventDefault();
             resetAll();
         }
     });
-}
-
-/**
- * Handle slot click - toggle sound on/off
- */
-function handleSlotClick(slotId) {
-    const slot = state.slots[slotId];
-    if (!slot || !slot.soundName) return;
-
-    if (slot.active) {
-        // Turn off
-        sequencer.stopPattern(slotId);
-        slot.element.classList.remove('active');
-        slot.active = false;
-    } else {
-        // Turn on
-        sequencer.startPattern(slotId, slot.soundName);
-        slot.element.classList.add('active');
-        slot.active = true;
-    }
 }
 
 /**
@@ -199,12 +360,18 @@ function handleSlotClick(slotId) {
 function resetAll() {
     if (!state.initialized) return;
 
-    sequencer.reset();
+    // Clear solo state
+    state.soloedSlotId = null;
 
-    for (const slot of state.slots) {
-        slot.element.classList.remove('active');
-        slot.active = false;
+    // Remove all sounds from slots
+    for (let i = 0; i < state.slots.length; i++) {
+        if (state.slots[i].soundName) {
+            removeSoundFromSlot(i);
+        }
     }
+
+    // Reset sequencer
+    sequencer.reset();
 
     console.log('[wrenchbox] Reset');
 }
