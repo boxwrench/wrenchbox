@@ -1,11 +1,11 @@
 /**
  * wrenchbox - Main Application
- * Phase 3: Sample-based audio with synth fallback
+ * Phase 5: Bonus system with combo detection
  *
  * Learning goals:
- * - Sample preloading
- * - Graceful fallback to synths
- * - Loading progress feedback
+ * - Combo detection
+ * - Bonus overlay animations
+ * - Event-driven feedback
  */
 
 // App state
@@ -76,8 +76,12 @@ async function handleStart() {
         window.sequencer = new Sequencer(audioEngine, CONFIG.BPM);
         sequencer.init();
 
+        // Initialize bonus system
+        setupBonusSystem();
+
         createSlots();
         createSoundIcons();
+        createBonusIndicator();
         setupDragDrop();
         setupEventListeners();
         updateBpmDisplay();
@@ -89,7 +93,7 @@ async function handleStart() {
         state.initialized = true;
 
         const mode = audioEngine.canUseSamples() && sampleManager.loaded ? 'samples' : 'synths';
-        console.log('[wrenchbox] Phase 3 ready, using:', mode);
+        console.log('[wrenchbox] Phase 5 ready, using:', mode);
     } catch (err) {
         console.error('[wrenchbox] Failed to initialize:', err);
         startContent.textContent = 'Error: ' + err.message;
@@ -203,6 +207,9 @@ function assignSoundToSlot(slotId, soundName) {
 
     // Apply current solo state
     updateMuteStates();
+
+    // Check for bonus triggers
+    checkForBonus();
 
     console.log('[wrenchbox] Assigned', soundName, 'to slot', slotId);
 }
@@ -399,6 +406,10 @@ function resetAll() {
     // Reset sequencer
     sequencer.reset();
 
+    // Reset bonus system (allow re-triggering)
+    bonusManager.reset();
+    updateBonusIndicator();
+
     console.log('[wrenchbox] Reset');
 }
 
@@ -409,6 +420,91 @@ function updateBpmDisplay() {
     const display = document.getElementById('bpmDisplay');
     if (display) {
         display.textContent = `${CONFIG.BPM} BPM`;
+    }
+}
+
+/**
+ * Set up the bonus system
+ */
+function setupBonusSystem() {
+    // Initialize overlay
+    bonusOverlay.init();
+
+    // Register bonus definitions
+    if (typeof BONUS_CONFIG !== 'undefined') {
+        bonusManager.registerBonuses(BONUS_CONFIG);
+    }
+
+    // Set up callbacks
+    bonusManager.onBonusTriggered = (bonus) => {
+        bonusOverlay.show(bonus);
+        updateBonusIndicator();
+    };
+
+    bonusManager.onBonusEnded = (bonus) => {
+        bonusOverlay.hide();
+    };
+
+    console.log('[wrenchbox] Bonus system initialized');
+}
+
+/**
+ * Create bonus indicator in header
+ */
+function createBonusIndicator() {
+    const controls = document.querySelector('.controls');
+    if (!controls) return;
+
+    const indicator = document.createElement('div');
+    indicator.className = 'bonus-indicator';
+    indicator.id = 'bonusIndicator';
+
+    // Create badge for each bonus
+    const bonuses = bonusManager.getBonusStatus();
+    for (const bonus of bonuses) {
+        const badge = document.createElement('div');
+        badge.className = 'bonus-badge';
+        badge.dataset.bonusId = bonus.id;
+        badge.textContent = bonus.icon;
+        badge.title = `${bonus.title}: ${bonus.requiredSounds.join(' + ')}`;
+        indicator.appendChild(badge);
+    }
+
+    controls.insertBefore(indicator, controls.firstChild);
+}
+
+/**
+ * Update bonus indicator badges
+ */
+function updateBonusIndicator() {
+    const bonuses = bonusManager.getBonusStatus();
+
+    for (const bonus of bonuses) {
+        const badge = document.querySelector(`.bonus-badge[data-bonus-id="${bonus.id}"]`);
+        if (badge) {
+            badge.classList.toggle('unlocked', bonus.triggered);
+        }
+    }
+}
+
+/**
+ * Get array of currently active sound names
+ */
+function getActiveSoundNames() {
+    return state.slots
+        .filter(s => s.soundName && s.active)
+        .map(s => s.soundName);
+}
+
+/**
+ * Check for bonus triggers
+ */
+function checkForBonus() {
+    const activeSounds = getActiveSoundNames();
+    const bonus = bonusManager.checkBonus(activeSounds);
+
+    if (bonus) {
+        bonusManager.triggerBonus(bonus);
     }
 }
 

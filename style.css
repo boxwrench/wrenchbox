@@ -440,3 +440,175 @@ body.is-dragging .slot.empty {
 .slot[draggable="true"]:active {
     cursor: grabbing;
 }
+
+/* ========================================
+   Phase 5: Bonus Overlay Styles
+   ======================================== */
+
+.bonus-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.bonus-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bonus-content {
+    text-align: center;
+    transform: scale(0.5);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bonus-content.animate-in {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.bonus-content.animate-out {
+    transform: scale(1.5);
+    opacity: 0;
+}
+
+.bonus-icon {
+    font-size: 6em;
+    margin-bottom: 20px;
+    animation: bonus-bounce 0.6s ease infinite;
+}
+
+.bonus-title {
+    font-size: 3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px var(--accent);
+}
+
+.bonus-description {
+    font-size: 1.2em;
+    color: var(--text-muted);
+}
+
+@keyframes bonus-bounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.1); }
+}
+
+/* Bonus animation variations */
+.bonus-overlay[data-animation="pulse"] .bonus-content {
+    animation: bonus-pulse 0.5s ease infinite;
+}
+
+.bonus-overlay[data-animation="wave"] .bonus-content {
+    animation: bonus-wave 1s ease infinite;
+}
+
+.bonus-overlay[data-animation="shake"] .bonus-content {
+    animation: bonus-shake 0.1s ease infinite;
+}
+
+.bonus-overlay[data-animation="disco"] {
+    background: linear-gradient(45deg,
+        rgba(255,0,0,0.3),
+        rgba(0,255,0,0.3),
+        rgba(0,0,255,0.3),
+        rgba(255,255,0,0.3));
+    background-size: 400% 400%;
+    animation: disco-bg 2s ease infinite;
+}
+
+@keyframes bonus-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes bonus-wave {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+}
+
+@keyframes bonus-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes disco-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Fireworks particles */
+.bonus-particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: hsl(var(--hue), 100%, 60%);
+    animation: particle-explode 1s ease-out forwards;
+    animation-delay: var(--delay);
+}
+
+@keyframes particle-explode {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Bonus indicator in header */
+.bonus-indicator {
+    display: flex;
+    gap: 5px;
+    margin-left: 15px;
+}
+
+.bonus-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(50, 50, 70, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+    cursor: help;
+}
+
+.bonus-badge.unlocked {
+    opacity: 1;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    animation: badge-glow 2s ease infinite;
+}
+
+@keyframes badge-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+}
