@@ -410,6 +410,27 @@ The corruption/horror mode adds a creepy twist where sounds become distorted.
 }
 ```
 
+### 🩸 The Cursed Instrument
+To trigger horror mode, you need at least one instrument with `"cursed": true`.
+
+**Important:** You can name this instrument anything you want!
+- "The Virus"
+- "Darkness"
+- "System Failure"
+- "Glitch"
+
+It will function as the "Patient Zero" for the corruption.
+
+```json
+"virus": {
+    "name": "The Virus",  <-- Name it anything!
+    "type": "cursed",
+    "cursed": true,       <-- This flag is what matters
+    ...
+}
+```
+```
+
 ### Corruption Settings
 
 | Setting | What It Does | Default |
@@ -423,7 +444,51 @@ The corruption/horror mode adds a creepy twist where sounds become distorted.
 
 ---
 
-## Step 10: Test Everything
+---
+
+## Step 10: Advanced - Creating a Transformation
+
+Want your theme to physically transform (like "Project Singularity")?
+
+### 1. Changing the Background
+You can set a separate `horrorBackground` that activates when corruption starts.
+
+```json
+"corruption": {
+    "enabled": true,
+    ...
+    "horrorBackground": {
+        "type": "image",
+        "image": "backgrounds/bg_viral.png"
+    }
+}
+```
+
+### 2. Evil Icons (`icon_viral`)
+You can make icons swap to an "evil" version when corruption hits 50% (Medium Tier).
+
+```json
+"kick": {
+    "icon": "icons/kick_clean.png",
+    "icon_viral": "icons/kick_evil.png",  <-- Swaps to this!
+    ...
+}
+```
+
+### 3. Musical Shift (`patternB`)
+For synths, you can define a "Pattern B" that plays when corruption is Medium or higher. This lets you shift from Major to Minor keys!
+
+```json
+"lead": {
+    "pattern": ["C4", "E4", "G4", "C5"],       <-- Normal (Happy)
+    "patternB": ["C4", "Eb4", "G4", "Bb4"],    <-- Cursed (Sad/Evil)
+    ...
+}
+```
+
+---
+
+## Step 11: Test Everything
 
 ### Testing Checklist
 
@@ -456,7 +521,7 @@ If you see "using synths" instead of your samples, you need to run a server:
 
 ---
 
-## Step 11: Share Your Theme!
+## Step 12: Share Your Theme!
 
 ### Option A: Share the Files
 

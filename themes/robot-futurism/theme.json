@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "id": "robot-futurism",
+    "name": "Project Singularity",
+    "description": "A high-tech robotic future transitioning into a digital viral nightmare.",
+    "author": "Antigravity",
+    "version": "1.0.0",
+    "bpm": 128,
+    "key": "C Major",
+    "loopBars": 4
+  },
+
+  "colors": {
+    "primary": "#0a0a1a",
+    "secondary": "#1a1a2e",
+    "accent": "#00ffff",
+    "text": "#ffffff",
+    "textMuted": "#888888",
+    "beats": "#4488ff",
+    "effects": "#00ffff",
+    "melodies": "#00ffcc",
+    "voices": "#ffdd44",
+    "bass": "#0044ff",
+    "cursed": "#ff0000"
+  },
+
+  "background": {
+    "type": "image",
+    "colors": ["#0a0a1a", "#1a1a2e"],
+    "image": "backgrounds/bg_clean.png"
+  },
+
+  "sounds": {
+    "kick": {
+      "name": "Unit-01",
+      "type": "beats",
+      "icon": "icons/icon_unit01_clean.png",
+      "icon_viral": "icons/icon_unit01_viral.png",
+      "sound": "sounds/kick_clean.ogg",
+      "soundB": "sounds/kick_viral.ogg",
+      "pattern": ["C1", null, null, null, "C1", null, null, null],
+      "patternB": ["C1", "C1", null, "C1", "C1", null, "Gb0", "C1"],
+      "subdivision": "8n",
+      "synth": {
+        "type": "MembraneSynth",
+        "options": {
+          "pitchDecay": 0.05,
+          "octaves": 6,
+          "envelope": { "attack": 0.001, "decay": 0.4, "sustain": 0.01 }
+        }
+      }
+    },
+    "snare": {
+      "name": "Pulse",
+      "type": "beats",
+      "icon": "icons/icon_pulse_clean.png",
+      "icon_viral": "icons/icon_pulse_viral.png",
+      "sound": "sounds/snare_clean.ogg",
+      "soundB": "sounds/snare_viral.ogg",
+      "pattern": [null, null, "C2", null, null, null, "C2", null],
+      "patternB": [null, "C2", "C2", "C2", null, "C2", "Gb1", null],
+      "subdivision": "8n",
+      "synth": {
+        "type": "NoiseSynth",
+        "options": {
+          "noise": { "type": "white" },
+          "envelope": { "attack": 0.001, "decay": 0.2, "sustain": 0 }
+        }
+      }
+    },
+    "hihat": {
+      "name": "Echo",
+      "type": "effects",
+      "icon": "icons/icon_echo_clean.png",
+      "icon_viral": "icons/icon_echo_viral.png",
+      "sound": "sounds/hihat_clean.ogg",
+      "soundB": "sounds/hihat_viral.ogg",
+      "pattern": ["C4", "C4", "C4", "C4", "C4", "C4", "C4", "C4"],
+      "patternB": ["C4", null, "C4", "C4", null, "Gb4", "C4", "C4"],
+      "subdivision": "8n",
+      "synth": {
+        "type": "MetalSynth",
+        "options": {
+          "frequency": 400,
+          "envelope": { "attack": 0.001, "decay": 0.1, "release": 0.1 }
+        }
+      }
+    },
+    "bass": {
+      "name": "Sine",
+      "type": "bass",
+      "icon": "icons/icon_sine_clean.png",
+      "icon_viral": "icons/icon_sine_viral.png",
+      "sound": "sounds/bass_clean.ogg",
+      "soundB": "sounds/bass_viral.ogg",
+      "pattern": ["C2", null, "G1", null, "C2", null, "Bb1", null],
+      "patternB": ["C2", "Eb2", "Gb1", "C2", "Bb1", "Gb1", "C1", null],
+      "subdivision": "8n",
+      "synth": {
+        "type": "MonoSynth",
+        "options": {
+          "oscillator": { "type": "sine" },
+          "envelope": {
+            "attack": 0.01,
+            "decay": 1.0,
+            "sustain": 0.5,
+            "release": 0.5
+          }
+        }
+      }
+    },
+    "lead": {
+      "name": "Phase",
+      "type": "melodies",
+      "icon": "icons/icon_phase_clean.png",
+      "icon_viral": "icons/icon_phase_viral.png",
+      "sound": "sounds/lead_clean.ogg",
+      "soundB": "sounds/lead_viral.ogg",
+      "pattern": ["G4", "E4", "C4", "G4", "A4", "G4", "C5", "G4"],
+      "patternB": ["Gb4", "Eb4", "C4", "Gb4", "Ab4", "Gb4", "C5", "Gb4"],
+      "subdivision": "8n",
+      "synth": {
+        "type": "PolySynth",
+        "options": {
+          "oscillator": { "type": "triangle" }
+        }
+      }
+    },
+    "byte": {
+      "name": "Byte",
+      "type": "effects",
+      "icon": "icons/icon_byte_clean.png",
+      "icon_viral": "icons/icon_byte_viral.png",
+      "sound": "sounds/byte_clean.ogg",
+      "soundB": "sounds/byte_viral.ogg",
+      "pattern": ["C5", null, "G4", null, "C5", null, "G4", null],
+      "patternB": ["C5", "G4", "Eb4", "C4", "G3", "C2", "C1", null],
+      "subdivision": "16n",
+      "synth": {
+        "type": "MembraneSynth",
+        "options": { "pitchDecay": 0.01, "octaves": 2 }
+      }
+    },
+    "virus": {
+      "name": "The Virus",
+      "type": "cursed",
+      "icon": "icons/icon_virus_clean.png",
+      "icon_viral": "icons/icon_virus_viral.png",
+      "sound": "sounds/virus_clean.ogg",
+      "soundB": "sounds/virus_viral.ogg",
+      "cursed": true,
+      "pattern": ["C1", null, "C1", null, "C1", null, "C1", null],
+      "subdivision": "4n",
+      "synth": {
+        "type": "MembraneSynth",
+        "options": { "pitchDecay": 1.0, "octaves": 10 }
+      }
+    }
+  },
+
+  "corruption": {
+    "enabled": true,
+    "triggerSound": "virus",
+    "spreadRate": 0.8,
+    "spreadAmount": 30,
+    "tickInterval": 800,
+    "horrorBackground": {
+      "type": "image",
+      "colors": ["#1a0000", "#000000"],
+      "image": "backgrounds/bg_viral.png"
+    }
+  },
+
+  "ui": {
+    "slotCount": 7,
+    "slotSize": 100,
+    "iconSize": 60,
+    "showBpmDisplay": true,
+    "showPhaseLabel": true,
+    "phaseLabel": "Project Singularity"
+  }
+}

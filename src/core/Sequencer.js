@@ -86,6 +86,7 @@ class Sequencer {
                 type: config.type || 'effects',
                 icon: config.icon || '🎵',
                 pattern: config.pattern || ['C4', null, 'C4', null],
+                patternB: config.patternB || config.pattern || ['C4', null, 'C4', null],
                 subdivision: config.subdivision || '8n',
                 cursed: config.cursed || false,
                 // Store synth config for AudioEngine
@@ -149,12 +150,23 @@ class Sequencer {
         } else if (mode === 'synth') {
             // Synth mode: create and start a Tone.Sequence synced to Transport 0
             const sequence = new Tone.Sequence(
-                (time, note) => {
+                (time, tickIndex) => {
+                    // Check corruption level to decide which pattern to use
+                    const corruptionLevel = typeof corruptionManager !== 'undefined' ? 
+                        corruptionManager.getCorruption(slotId) : 0;
+                    
+                    const activePattern = (corruptionLevel >= 50 && sound.patternB) ? 
+                        sound.patternB : sound.pattern;
+                    
+                    // Patterns can vary in length, so we wrap the index
+                    const note = activePattern[tickIndex % activePattern.length];
+
                     if (note !== null) {
                         this.audio.triggerSound(slotId, note, sound.subdivision, time);
                     }
                 },
-                sound.pattern,
+                // We pass indices instead of notes to allow dynamic pattern switching
+                Array.from({ length: Math.max(sound.pattern.length, (sound.patternB?.length || 0)) }, (_, i) => i),
                 sound.subdivision
             );
 

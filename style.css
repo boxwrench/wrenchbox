@@ -887,7 +887,7 @@ body.is-dragging .slot.empty {
 
 /* Horror mode body effects */
 body.horror-mode {
-  animation: horror-bg 5s ease infinite;
+  /* Animation removed to allow theme-defined backgrounds */
 }
 
 body.horror-mode::before {
@@ -904,15 +904,7 @@ body.horror-mode::before {
   animation: horror-vignette 3s ease infinite;
 }
 
-@keyframes horror-bg {
-  0%,
-  100% {
-    background: linear-gradient(135deg, #1a0a0a 0%, #0a0a1a 100%);
-  }
-  50% {
-    background: linear-gradient(135deg, #1a0000 0%, #000a1a 100%);
-  }
-}
+/* horror-bg keyframes removed */
 
 @keyframes horror-vignette {
   0%,

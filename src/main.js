@@ -296,7 +296,16 @@ function assignSoundToSlot(slotId, soundName) {
 
     const iconEl = slotEl.querySelector('.slot-icon');
     const labelEl = slotEl.querySelector('.slot-label');
-    iconEl.textContent = SOUND_ICONS[soundName];
+    
+    // Use theme icon if available
+    const themeSounds = themeLoader.getSoundsConfig();
+    const themeSound = themeSounds[soundName];
+    if (themeSound?.iconPath) {
+        iconEl.innerHTML = `<img src="${themeSound.iconPath}" alt="${soundName}" class="icon-img" style="width:100%;height:100%;object-fit:contain;">`;
+    } else {
+        iconEl.textContent = themeSound?.icon || SOUND_ICONS[soundName] || '🎵';
+    }
+    
     labelEl.textContent = soundName;
 
     // Make slot draggable
@@ -638,6 +647,22 @@ function setupHorrorSystem() {
         const slot = state.slots[slotId];
         if (slot && slot.element) {
             horrorEffects.applyVisualCorruption(slot.element, tier, level);
+            
+            // Swap icon if it hits Medium corruption (50%)
+            const iconEl = slot.element.querySelector('.slot-icon img');
+            if (iconEl && slot.soundName) {
+                const themeSounds = themeLoader.getSoundsConfig();
+                const themeSound = themeSounds[slot.soundName];
+                
+                if (themeSound?.iconPathViral) {
+                    const isCorrupted = level >= 50;
+                    const targetSrc = isCorrupted ? themeSound.iconPathViral : themeSound.iconPath;
+                    if (iconEl.src !== targetSrc) {
+                        iconEl.src = targetSrc;
+                        console.log(`[wrenchbox] Slot ${slotId} icon swapped to ${isCorrupted ? 'viral' : 'clean'}`);
+                    }
+                }
+            }
         }
 
         // Update audio effects if slot is active
@@ -648,13 +673,35 @@ function setupHorrorSystem() {
         horrorEffects.updateGlobalEffects(maxCorruption);
     };
 
+    const originalBackground = document.body.style.backgroundImage || document.body.style.background;
+    
     corruptionManager.onHorrorModeStart = () => {
         document.body.classList.add('horror-mode');
+        
+        // Apply horror background from theme if available
+        const corruptionConfig = themeLoader.getCorruptionConfig();
+        if (corruptionConfig.horrorBackground) {
+            const bg = corruptionConfig.horrorBackground;
+            if (bg.type === 'image' && bg.image) {
+                const bgPath = themeLoader.getAssetPath(bg.image);
+                document.body.style.backgroundImage = `url("${bgPath}")`;
+                document.body.style.backgroundSize = 'cover';
+            } else if (bg.type === 'color' && bg.colors?.[0]) {
+                document.body.style.background = bg.colors[0];
+            } else if (bg.type === 'gradient' && bg.colors) {
+                document.body.style.background = `linear-gradient(135deg, ${bg.colors[0]} 0%, ${bg.colors[1]} 100%)`;
+            }
+        }
+        
         console.log('[wrenchbox] HORROR MODE ACTIVATED');
     };
 
     corruptionManager.onHorrorModeEnd = () => {
         document.body.classList.remove('horror-mode');
+
+        // Restore original background
+        // Re-apply using themeLoader to ensure consistency (gradients vs images)
+        themeLoader.applyBackground();
 
         // Clear all visual corruption
         for (const slot of state.slots) {
