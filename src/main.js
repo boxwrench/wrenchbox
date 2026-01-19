@@ -1,12 +1,12 @@
 /**
  * wrenchbox - Main Application
- * Phase 6: Horror mode with corruption spread
+ * Complete: Phases 1-6 with data-driven theming
  *
  * Learning goals:
- * - Cellular automata for corruption spread
- * - Real-time audio effect manipulation
- * - Progressive visual corruption
- * - State-driven transformation
+ * - Theme/mod loading from JSON
+ * - Dynamic asset paths
+ * - CSS variable injection
+ * - Graceful fallbacks
  */
 
 // App state
@@ -33,6 +33,15 @@ const SOUND_ICONS = {
 };
 
 /**
+ * Get theme ID from URL parameter
+ * Usage: index.html?theme=my-theme
+ */
+function getThemeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('theme');
+}
+
+/**
  * Initialize the app
  */
 function init() {
@@ -52,6 +61,21 @@ async function handleStart() {
     const startContent = overlay.querySelector('.start-content p');
 
     try {
+        // Load theme first
+        startContent.textContent = 'Loading theme...';
+        const themeId = getThemeFromUrl() || 'default';
+        await themeLoader.load(themeId);
+
+        // Apply theme colors and background
+        themeLoader.applyColors();
+        themeLoader.applyBackground();
+
+        // Update config from theme
+        const meta = themeLoader.getMeta();
+        const uiConfig = themeLoader.getUIConfig();
+        CONFIG.BPM = meta.bpm || 120;
+        CONFIG.NUM_SLOTS = uiConfig.slotCount || 7;
+
         // Update overlay to show loading
         startContent.textContent = 'Initializing audio...';
 
@@ -99,7 +123,8 @@ async function handleStart() {
         state.initialized = true;
 
         const mode = audioEngine.canUseSamples() && sampleManager.loaded ? 'samples' : 'synths';
-        console.log('[wrenchbox] Phase 6 ready, using:', mode);
+        const themeName = themeLoader.getMeta().name;
+        console.log(`[wrenchbox] Ready! Theme: ${themeName}, Audio: ${mode}`);
     } catch (err) {
         console.error('[wrenchbox] Failed to initialize:', err);
         startContent.textContent = 'Error: ' + err.message;
@@ -148,14 +173,24 @@ function createSlots() {
 function createSoundIcons() {
     const container = document.getElementById('soundIcons');
     const sounds = Sequencer.getSoundNames();
+    const themeSounds = themeLoader.getSoundsConfig();
 
     for (const soundName of sounds) {
         const sound = Sequencer.getSound(soundName);
+        const themeSound = themeSounds[soundName];
+
         const icon = document.createElement('div');
         icon.className = 'sound-icon';
         icon.dataset.soundName = soundName;
         icon.dataset.type = sound.type;
-        icon.innerHTML = SOUND_ICONS[soundName];
+
+        // Use theme icon (image or emoji) or fallback
+        if (themeSound?.iconPath) {
+            icon.innerHTML = `<img src="${themeSound.iconPath}" alt="${soundName}" style="width:100%;height:100%;object-fit:contain;">`;
+        } else {
+            icon.innerHTML = themeSound?.icon || SOUND_ICONS[soundName] || '🎵';
+        }
+
         icon.title = `Drag ${soundName} to a slot`;
 
         // Mark cursed sounds
@@ -451,8 +486,11 @@ function setupBonusSystem() {
     // Initialize overlay
     bonusOverlay.init();
 
-    // Register bonus definitions
-    if (typeof BONUS_CONFIG !== 'undefined') {
+    // Register bonus definitions from theme (or fallback to hardcoded)
+    const themeBonuses = themeLoader.getBonusesConfig();
+    if (themeBonuses.length > 0) {
+        bonusManager.registerBonuses(themeBonuses);
+    } else if (typeof BONUS_CONFIG !== 'undefined') {
         bonusManager.registerBonuses(BONUS_CONFIG);
     }
 
@@ -599,16 +637,17 @@ function createCureButton() {
 }
 
 /**
- * Update mode indicator (samples vs synths)
+ * Update mode indicator (theme name + audio mode)
  */
 function updateModeIndicator() {
-    const badge = document.querySelector('.phase-badge');
+    const badge = document.getElementById('phaseBadge');
     if (badge) {
+        const themeName = themeLoader.getMeta().name || 'wrenchbox';
         const hasSamples = typeof sampleManager !== 'undefined' &&
                           sampleManager.loaded &&
                           window.location.protocol !== 'file:';
-        const mode = hasSamples ? '(Samples)' : '(Synths)';
-        badge.textContent = `Phase 3: Sample-Based Audio ${mode}`;
+        const mode = hasSamples ? 'samples' : 'synths';
+        badge.textContent = `${themeName} (${mode})`;
     }
 }
 

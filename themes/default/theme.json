@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "id": "default",
+    "name": "Wrenchbox Default",
+    "description": "The original wrenchbox experience",
+    "author": "wrenchbox team",
+    "version": "1.0.0",
+    "bpm": 120,
+    "key": "C Minor",
+    "loopBars": 4
+  },
+
+  "colors": {
+    "primary": "#1a1a2e",
+    "secondary": "#16213e",
+    "accent": "#00ffff",
+    "text": "#ffffff",
+    "textMuted": "#888888",
+    "beats": "#ff4444",
+    "effects": "#4488ff",
+    "melodies": "#44ff88",
+    "voices": "#ffdd44",
+    "bass": "#ff88ff",
+    "cursed": "#660000"
+  },
+
+  "background": {
+    "type": "gradient",
+    "colors": ["#1a1a2e", "#16213e"],
+    "image": null
+  },
+
+  "sounds": {
+    "kick": {
+      "name": "Kick",
+      "type": "beats",
+      "icon": "icons/kick.png",
+      "iconEmoji": "🥁",
+      "sound": "sounds/kick.ogg",
+      "soundB": "sounds/kick_b.ogg",
+      "pattern": ["C1", null, null, null, "C1", null, null, null],
+      "subdivision": "8n",
+      "synth": {
+        "type": "MembraneSynth",
+        "options": {
+          "pitchDecay": 0.05,
+          "octaves": 6
+        }
+      }
+    },
+    "snare": {
+      "name": "Snare",
+      "type": "beats",
+      "icon": "icons/snare.png",
+      "iconEmoji": "🪘",
+      "sound": "sounds/snare.ogg",
+      "soundB": "sounds/snare_b.ogg",
+      "pattern": [null, null, "C2", null, null, null, "C2", null],
+      "subdivision": "8n",
+      "synth": {
+        "type": "NoiseSynth",
+        "options": {
+          "noise": { "type": "white" }
+        }
+      }
+    },
+    "hihat": {
+      "name": "Hi-Hat",
+      "type": "effects",
+      "icon": "icons/hihat.png",
+      "iconEmoji": "🎩",
+      "sound": "sounds/hihat.ogg",
+      "soundB": "sounds/hihat_b.ogg",
+      "pattern": ["C4", "C4", "C4", "C4", "C4", "C4", "C4", "C4"],
+      "subdivision": "8n",
+      "synth": {
+        "type": "MetalSynth",
+        "options": {
+          "frequency": 300,
+          "harmonicity": 5.1
+        }
+      }
+    },
+    "bass": {
+      "name": "Bass",
+      "type": "bass",
+      "icon": "icons/bass.png",
+      "iconEmoji": "🎸",
+      "sound": "sounds/bass.ogg",
+      "soundB": "sounds/bass_b.ogg",
+      "pattern": ["C2", null, null, "C2", "Eb2", "C2", null, "G2", null, "C2", null, "Eb2", "G2", "Eb2", "C2", null],
+      "subdivision": "16n",
+      "synth": {
+        "type": "MonoSynth",
+        "options": {
+          "oscillator": { "type": "triangle" }
+        }
+      }
+    },
+    "lead": {
+      "name": "Lead",
+      "type": "melodies",
+      "icon": "icons/lead.png",
+      "iconEmoji": "🎹",
+      "sound": "sounds/lead.ogg",
+      "soundB": "sounds/lead_b.ogg",
+      "pattern": ["G4", "Eb4", null, "C4", "G4", "Eb4", "Bb4", "G4", "C5", "Bb4", null, "G4", "Eb4", "C4", "Eb4", "G4"],
+      "subdivision": "16n",
+      "synth": {
+        "type": "MonoSynth",
+        "options": {
+          "oscillator": { "type": "square" }
+        }
+      }
+    },
+    "cursed": {
+      "name": "Cursed",
+      "type": "cursed",
+      "icon": "icons/cursed.png",
+      "iconEmoji": "💀",
+      "sound": "sounds/cursed.ogg",
+      "cursed": true,
+      "pattern": ["C1", null, "Eb1", null, "C1", "C1", null, "Gb1", null, "C1", null, "Eb1", "Gb1", null, "C1", null],
+      "subdivision": "16n",
+      "synth": {
+        "type": "MonoSynth",
+        "options": {
+          "oscillator": { "type": "sawtooth" }
+        }
+      }
+    }
+  },
+
+  "bonuses": [
+    {
+      "id": "full_beat",
+      "title": "Full Beat",
+      "description": "The complete rhythm section!",
+      "requiredSounds": ["kick", "snare", "hihat"],
+      "icon": "effects/bonus_beat.png",
+      "iconEmoji": "🥁",
+      "animation": "pulse",
+      "video": null,
+      "duration": 4000,
+      "repeatable": true
+    },
+    {
+      "id": "melody_master",
+      "title": "Melody Master",
+      "description": "Bass and lead in harmony",
+      "requiredSounds": ["bass", "lead"],
+      "icon": "effects/bonus_melody.png",
+      "iconEmoji": "🎼",
+      "animation": "wave",
+      "duration": 4000,
+      "repeatable": true
+    },
+    {
+      "id": "full_band",
+      "title": "Full Band",
+      "description": "All instruments playing together!",
+      "requiredSounds": ["kick", "snare", "hihat", "bass", "lead"],
+      "icon": "effects/bonus_band.png",
+      "iconEmoji": "🎸",
+      "animation": "fireworks",
+      "video": "effects/fullband.mp4",
+      "duration": 6000,
+      "repeatable": false
+    },
+    {
+      "id": "low_end",
+      "title": "Low End Theory",
+      "description": "Feel that bass!",
+      "requiredSounds": ["kick", "bass"],
+      "icon": "effects/bonus_lowend.png",
+      "iconEmoji": "🔊",
+      "animation": "shake",
+      "duration": 3000,
+      "repeatable": true
+    },
+    {
+      "id": "groove_machine",
+      "title": "Groove Machine",
+      "description": "The pocket is locked!",
+      "requiredSounds": ["kick", "snare", "bass"],
+      "icon": "effects/bonus_groove.png",
+      "iconEmoji": "🕺",
+      "animation": "disco",
+      "duration": 5000,
+      "repeatable": true
+    }
+  ],
+
+  "corruption": {
+    "enabled": true,
+    "triggerSound": "cursed",
+    "spreadRate": 0.4,
+    "spreadAmount": 15,
+    "tickInterval": 2000,
+    "tiers": {
+      "low": { "min": 25, "hueShift": 30 },
+      "medium": { "min": 50, "hueShift": 60, "saturation": 0.7 },
+      "high": { "min": 75, "hueShift": 120, "saturation": 0.5 },
+      "full": { "min": 100, "invert": true }
+    },
+    "cureCombo": ["kick", "lead", "hihat"],
+    "horrorBackground": {
+      "type": "gradient",
+      "colors": ["#1a0a0a", "#0a0a1a"]
+    }
+  },
+
+  "ui": {
+    "slotCount": 7,
+    "slotSize": 100,
+    "iconSize": 60,
+    "showBpmDisplay": true,
+    "showPhaseLabel": true,
+    "phaseLabel": "wrenchbox"
+  }
+}
