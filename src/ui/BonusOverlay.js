@@ -22,6 +22,9 @@ class BonusOverlay {
         this.overlay = document.createElement('div');
         this.overlay.className = 'bonus-overlay';
         this.overlay.innerHTML = `
+            <div class="bonus-video-container">
+                <video class="bonus-video" muted playsinline loop></video>
+            </div>
             <div class="bonus-content">
                 <div class="bonus-icon"></div>
                 <h2 class="bonus-title"></h2>
@@ -47,6 +50,8 @@ class BonusOverlay {
         const title = this.overlay.querySelector('.bonus-title');
         const description = this.overlay.querySelector('.bonus-description');
         const particles = this.overlay.querySelector('.bonus-particles');
+        const videoContainer = this.overlay.querySelector('.bonus-video-container');
+        const video = this.overlay.querySelector('.bonus-video');
 
         // Set content
         icon.textContent = bonus.icon;
@@ -55,6 +60,19 @@ class BonusOverlay {
 
         // Set animation type
         this.overlay.dataset.animation = bonus.animation;
+
+        // Handle video if provided
+        if (bonus.videoPath) {
+            video.src = bonus.videoPath;
+            videoContainer.classList.add('has-video');
+            video.play().catch(err => {
+                console.warn('[BonusOverlay] Video play failed:', err);
+                videoContainer.classList.remove('has-video');
+            });
+        } else {
+            videoContainer.classList.remove('has-video');
+            video.src = '';
+        }
 
         // Generate particles for fireworks animation
         if (bonus.animation === 'fireworks') {
@@ -79,13 +97,22 @@ class BonusOverlay {
         if (!this.isShowing) return;
 
         const content = this.overlay.querySelector('.bonus-content');
+        const videoContainer = this.overlay.querySelector('.bonus-video-container');
+        const video = this.overlay.querySelector('.bonus-video');
+
         content.classList.remove('animate-in');
         content.classList.add('animate-out');
+
+        // Stop video
+        video.pause();
+        video.currentTime = 0;
 
         // Remove after animation
         setTimeout(() => {
             this.overlay.classList.remove('active');
             content.classList.remove('animate-out');
+            videoContainer.classList.remove('has-video');
+            video.src = '';
             this.overlay.querySelector('.bonus-particles').innerHTML = '';
             this.isShowing = false;
         }, 500);

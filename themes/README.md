@@ -2,6 +2,8 @@
 
 Create custom themes by adding folders here. Each theme is self-contained with its own config and assets.
 
+**New to theming?** Check out the [Complete Modding Guide](../docs/MODDING_GUIDE.md) - a step-by-step tutorial for beginners with no coding experience!
+
 ## Quick Start
 
 1. Copy the `default/` folder

@@ -22,7 +22,7 @@ const CONFIG = {
     BPM: 120
 };
 
-// Icons for sounds
+// Icons for sounds (fallback)
 const SOUND_ICONS = {
     kick: '🥁',
     snare: '🪘',
@@ -31,6 +31,42 @@ const SOUND_ICONS = {
     lead: '🎹',
     cursed: '💀'
 };
+
+/**
+ * Build sample config from theme sounds
+ * @param {Object} themeSounds - Sounds from themeLoader.getSoundsConfig()
+ * @param {Object} meta - Theme metadata with bpm, loopBars
+ * @returns {Object} Sample config for SampleManager
+ */
+function buildSampleConfigFromTheme(themeSounds, meta) {
+    if (!themeSounds) return {};
+
+    const bpm = meta.bpm || 120;
+    const loopBars = meta.loopBars || 4;
+    // Calculate loop duration: (bars * beats * 60) / BPM
+    const loopDuration = (loopBars * 4 * 60) / bpm;
+
+    const sampleConfig = {};
+
+    for (const [soundName, config] of Object.entries(themeSounds)) {
+        // Only add if theme has a sound path
+        if (config.soundPath) {
+            sampleConfig[soundName] = {
+                url: config.soundPath,
+                urlB: config.soundPathB || null,
+                type: config.type || 'effects',
+                loopStart: 0,
+                loopEnd: loopDuration
+            };
+        }
+    }
+
+    if (Object.keys(sampleConfig).length > 0) {
+        console.log('[wrenchbox] Built sample config from theme:', Object.keys(sampleConfig));
+    }
+
+    return sampleConfig;
+}
 
 /**
  * Get theme ID from URL parameter
@@ -76,16 +112,28 @@ async function handleStart() {
         CONFIG.BPM = meta.bpm || 120;
         CONFIG.NUM_SLOTS = uiConfig.slotCount || 7;
 
+        // Initialize Sequencer with theme sounds
+        const themeSounds = themeLoader.getSoundsConfig();
+        Sequencer.initializeFromTheme(themeSounds);
+
         // Update overlay to show loading
         startContent.textContent = 'Initializing audio...';
 
         await audioEngine.init();
 
+        // Build sample config from theme (with fallback to hardcoded)
+        const themeSampleConfig = buildSampleConfigFromTheme(themeSounds, meta);
+
         // Try to preload samples (only works on HTTP, not file://)
-        if (typeof sampleManager !== 'undefined' && typeof SAMPLE_CONFIG !== 'undefined') {
-            if (window.location.protocol !== 'file:') {
+        if (typeof sampleManager !== 'undefined') {
+            // Use theme samples if available, otherwise fallback to SAMPLE_CONFIG
+            const samplesToUse = Object.keys(themeSampleConfig).length > 0
+                ? themeSampleConfig
+                : (typeof SAMPLE_CONFIG !== 'undefined' ? SAMPLE_CONFIG : {});
+
+            if (Object.keys(samplesToUse).length > 0 && window.location.protocol !== 'file:') {
                 startContent.textContent = 'Loading samples...';
-                sampleManager.registerSamples(SAMPLE_CONFIG);
+                sampleManager.registerSamples(samplesToUse);
 
                 try {
                     await sampleManager.preload((progress, name) => {
@@ -94,7 +142,7 @@ async function handleStart() {
                 } catch (err) {
                     console.warn('[wrenchbox] Sample preload failed, using synths:', err);
                 }
-            } else {
+            } else if (window.location.protocol === 'file:') {
                 console.log('[wrenchbox] Running from file://, using synths (samples require HTTP server)');
             }
         }
@@ -573,6 +621,10 @@ function checkForBonus() {
 function setupHorrorSystem() {
     // Initialize corruption manager
     corruptionManager.init(CONFIG.NUM_SLOTS);
+
+    // Apply theme corruption config
+    const corruptionConfig = themeLoader.getCorruptionConfig();
+    corruptionManager.applyThemeConfig(corruptionConfig);
 
     // Initialize horror effects
     horrorEffects.init();

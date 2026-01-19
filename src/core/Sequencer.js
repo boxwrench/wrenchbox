@@ -70,6 +70,36 @@ class Sequencer {
     };
 
     /**
+     * Initialize sounds from theme config
+     * Merges theme sounds with defaults (theme wins)
+     * @param {Object} themeSounds - Sound config from themeLoader.getSoundsConfig()
+     */
+    static initializeFromTheme(themeSounds) {
+        if (!themeSounds || Object.keys(themeSounds).length === 0) {
+            console.log('[Sequencer] No theme sounds, using defaults');
+            return;
+        }
+
+        // Merge theme sounds into SOUNDS (theme wins for matching keys)
+        for (const [soundName, config] of Object.entries(themeSounds)) {
+            Sequencer.SOUNDS[soundName] = {
+                type: config.type || 'effects',
+                icon: config.icon || '🎵',
+                pattern: config.pattern || ['C4', null, 'C4', null],
+                subdivision: config.subdivision || '8n',
+                cursed: config.cursed || false,
+                // Store synth config for AudioEngine
+                synth: config.synth || null,
+                // Store sample paths for SampleManager
+                soundPath: config.soundPath || null,
+                soundPathB: config.soundPathB || null
+            };
+        }
+
+        console.log('[Sequencer] Initialized', Object.keys(themeSounds).length, 'sounds from theme');
+    }
+
+    /**
      * Get available sound names
      */
     static getSoundNames() {

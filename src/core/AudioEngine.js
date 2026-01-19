@@ -68,7 +68,11 @@ class AudioEngine {
         }
 
         // Fall back to synth
-        const synth = this.createSynth(soundName, channel);
+        // Get synth config from Sequencer (which has theme data)
+        const soundDef = Sequencer.getSound(soundName);
+        const synthConfig = soundDef?.synth || null;
+
+        const synth = this.createSynth(soundName, channel, synthConfig);
         if (synth) {
             this.slots.set(slotId, {
                 mode: 'synth',
@@ -88,11 +92,33 @@ class AudioEngine {
      * Create a synth for a sound type
      * @param {string} soundName - The sound type
      * @param {Tone.Channel} channel - Output channel
+     * @param {Object} synthConfig - Optional theme synth config {type, options}
      * @returns {Object} Synth instance
      */
-    createSynth(soundName, channel) {
+    createSynth(soundName, channel, synthConfig = null) {
         let synth;
 
+        // Try theme config first
+        if (synthConfig && synthConfig.type) {
+            const SynthClass = Tone[synthConfig.type];
+            if (SynthClass) {
+                try {
+                    synth = new SynthClass(synthConfig.options || {}).connect(channel);
+                    if (synthConfig.volume !== undefined) {
+                        synth.volume.value = synthConfig.volume;
+                    }
+                    console.log('[AudioEngine] Created synth from theme config:', synthConfig.type);
+                    return synth;
+                } catch (err) {
+                    console.warn('[AudioEngine] Failed to create theme synth:', err);
+                    // Fall through to hardcoded
+                }
+            } else {
+                console.warn('[AudioEngine] Unknown Tone.js synth type:', synthConfig.type);
+            }
+        }
+
+        // Fall back to hardcoded synths
         switch (soundName) {
             case 'kick':
                 synth = new Tone.MembraneSynth({

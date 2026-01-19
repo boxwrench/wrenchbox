@@ -14,6 +14,9 @@ class CorruptionManager {
         // Corruption state per slot (0-100)
         this.corruption = new Map();
 
+        // Enabled flag (can be disabled by theme)
+        this.enabled = true;
+
         // Corruption spread settings
         this.spreadRate = 0.4;        // Probability of spreading per tick
         this.spreadAmount = 15;       // Amount added when spreading
@@ -28,6 +31,10 @@ class CorruptionManager {
             HIGH: 75,     // Ring mod, glitch
             FULL: 100     // Full horror mode
         };
+
+        // Theme visual config for tiers
+        this.tierVisuals = null;
+        this.cureCombo = null;
 
         // Callbacks
         this.onCorruptionChanged = null;  // (slotId, level, tier) => {}
@@ -50,9 +57,68 @@ class CorruptionManager {
     }
 
     /**
+     * Apply theme corruption config
+     * @param {Object} config - Corruption config from theme
+     */
+    applyThemeConfig(config) {
+        if (!config) return;
+
+        // Check if corruption is enabled in theme
+        if (config.enabled === false) {
+            this.enabled = false;
+            console.log('[CorruptionManager] Corruption disabled by theme');
+            return;
+        }
+
+        this.enabled = true;
+
+        // Apply spread settings
+        if (config.spreadRate !== undefined) {
+            this.spreadRate = config.spreadRate;
+        }
+        if (config.spreadAmount !== undefined) {
+            this.spreadAmount = config.spreadAmount;
+        }
+        if (config.tickInterval !== undefined) {
+            this.tickInterval = config.tickInterval;
+        }
+
+        // Apply tier thresholds if provided
+        if (config.tiers) {
+            if (config.tiers.low?.min !== undefined) {
+                this.THRESHOLDS.LOW = config.tiers.low.min;
+            }
+            if (config.tiers.medium?.min !== undefined) {
+                this.THRESHOLDS.MEDIUM = config.tiers.medium.min;
+            }
+            if (config.tiers.high?.min !== undefined) {
+                this.THRESHOLDS.HIGH = config.tiers.high.min;
+            }
+            if (config.tiers.full?.min !== undefined) {
+                this.THRESHOLDS.FULL = config.tiers.full.min;
+            }
+
+            // Store visual config for HorrorEffects to use
+            this.tierVisuals = config.tiers;
+        }
+
+        // Store cure combo for future use
+        if (config.cureCombo) {
+            this.cureCombo = config.cureCombo;
+        }
+
+        console.log('[CorruptionManager] Applied theme config:', {
+            spreadRate: this.spreadRate,
+            spreadAmount: this.spreadAmount,
+            tickInterval: this.tickInterval
+        });
+    }
+
+    /**
      * Trigger corruption from a specific slot (the "cursed" item)
      */
     startCorruption(slotId) {
+        if (!this.enabled) return;
         if (this.horrorModeActive) return;
 
         this.horrorModeActive = true;
