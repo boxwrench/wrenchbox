@@ -95,14 +95,23 @@ class SampleManager {
             return null;
         }
 
+        // Calculate the nearest whole bar for the loop end if not specified
+        // This ensures a 1.9s or 2.1s sample snaps perfectly to a 2.0s (1m) bar
+        let loopEnd = sample.loopEnd;
+        if (!loopEnd && sample.buffer) {
+            const barDuration = 60 / Tone.Transport.bpm.value * 4;
+            const numBars = Math.max(1, Math.round(sample.buffer.duration / barDuration));
+            loopEnd = `${numBars}m`;
+        }
+
         // Create player with the buffer
         const player = new Tone.Player({
             url: sample.buffer,
             loop: true,
             loopStart: sample.loopStart,
-            loopEnd: sample.loopEnd,
-            fadeIn: 0.01,
-            fadeOut: 0.05
+            loopEnd: loopEnd,
+            fadeIn: 0.005,
+            fadeOut: 0.005
         }).connect(channel);
 
         this.players.set(slotId, {

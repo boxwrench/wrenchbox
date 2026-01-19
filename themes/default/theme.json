@@ -88,7 +88,24 @@
       "iconEmoji": "🎸",
       "sound": "sounds/bass.ogg",
       "soundB": "sounds/bass_b.ogg",
-      "pattern": ["C2", null, null, "C2", "Eb2", "C2", null, "G2", null, "C2", null, "Eb2", "G2", "Eb2", "C2", null],
+      "pattern": [
+        "C2",
+        null,
+        null,
+        "C2",
+        "Eb2",
+        "C2",
+        null,
+        "G2",
+        null,
+        "C2",
+        null,
+        "Eb2",
+        "G2",
+        "Eb2",
+        "C2",
+        null
+      ],
       "subdivision": "16n",
       "synth": {
         "type": "MonoSynth",
@@ -104,7 +121,24 @@
       "iconEmoji": "🎹",
       "sound": "sounds/lead.ogg",
       "soundB": "sounds/lead_b.ogg",
-      "pattern": ["G4", "Eb4", null, "C4", "G4", "Eb4", "Bb4", "G4", "C5", "Bb4", null, "G4", "Eb4", "C4", "Eb4", "G4"],
+      "pattern": [
+        "G4",
+        "Eb4",
+        null,
+        "C4",
+        "G4",
+        "Eb4",
+        "Bb4",
+        "G4",
+        "C5",
+        "Bb4",
+        null,
+        "G4",
+        "Eb4",
+        "C4",
+        "Eb4",
+        "G4"
+      ],
       "subdivision": "16n",
       "synth": {
         "type": "MonoSynth",
@@ -120,7 +154,24 @@
       "iconEmoji": "💀",
       "sound": "sounds/cursed.ogg",
       "cursed": true,
-      "pattern": ["C1", null, "Eb1", null, "C1", "C1", null, "Gb1", null, "C1", null, "Eb1", "Gb1", null, "C1", null],
+      "pattern": [
+        "C1",
+        null,
+        "Eb1",
+        null,
+        "C1",
+        "C1",
+        null,
+        "Gb1",
+        null,
+        "C1",
+        null,
+        "Eb1",
+        "Gb1",
+        null,
+        "C1",
+        null
+      ],
       "subdivision": "16n",
       "synth": {
         "type": "MonoSynth",
@@ -141,7 +192,7 @@
       "iconEmoji": "🥁",
       "animation": "pulse",
       "video": null,
-      "duration": 4000,
+      "duration": 1000,
       "repeatable": true
     },
     {
@@ -164,7 +215,7 @@
       "iconEmoji": "🎸",
       "animation": "fireworks",
       "video": "effects/fullband.mp4",
-      "duration": 6000,
+      "duration": 1000,
       "repeatable": false
     },
     {
@@ -175,7 +226,7 @@
       "icon": "effects/bonus_lowend.png",
       "iconEmoji": "🔊",
       "animation": "shake",
-      "duration": 3000,
+      "duration": 1000,
       "repeatable": true
     },
     {
@@ -186,7 +237,7 @@
       "icon": "effects/bonus_groove.png",
       "iconEmoji": "🕺",
       "animation": "disco",
-      "duration": 5000,
+      "duration": 1500,
       "repeatable": true
     }
   ],

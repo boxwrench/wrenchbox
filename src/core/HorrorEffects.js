@@ -32,16 +32,17 @@ class HorrorEffects {
      */
     init() {
         // Create global effect chain for overall horror ambiance
-        this.globalEffects = {
-            reverb: new Tone.Reverb({
-                decay: 4,
-                wet: 0
-            }).toDestination(),
-            filter: new Tone.Filter({
-                frequency: 20000,
-                type: 'lowpass'
-            }).connect(this.globalEffects?.reverb || Tone.Destination)
-        };
+        const reverb = new Tone.Reverb({
+            decay: 4,
+            wet: 0
+        }).toDestination();
+
+        const filter = new Tone.Filter({
+            frequency: 20000,
+            type: 'lowpass'
+        }).connect(reverb);
+
+        this.globalEffects = { reverb, filter };
 
         console.log('[HorrorEffects] Initialized');
     }
@@ -50,8 +51,8 @@ class HorrorEffects {
      * Create effect chain for a slot
      */
     createEffectChain(slotId, channel) {
-        // Disconnect channel from destination temporarily
-        channel.disconnect();
+        // Effects chain initialized here. No channel.disconnect() needed
+        // as channel is newly created in AudioEngine.
 
         // Create effects chain
         const effects = {
@@ -85,13 +86,19 @@ class HorrorEffects {
             }).start()
         };
 
-        // Connect chain: channel → effects → destination
+        // Connect chain: channel → effects → global effects
         channel.connect(effects.pitchShift);
         effects.pitchShift.connect(effects.bitCrusher);
         effects.bitCrusher.connect(effects.freqShift);
         effects.freqShift.connect(effects.distortion);
         effects.distortion.connect(effects.tremolo);
-        effects.tremolo.toDestination();
+        
+        // Final connection to global effects chain
+        if (this.globalEffects && this.globalEffects.filter) {
+            effects.tremolo.connect(this.globalEffects.filter);
+        } else {
+            effects.tremolo.toDestination();
+        }
 
         this.effectChains.set(slotId, effects);
         this.slotTiers.set(slotId, 'none');

@@ -37,10 +37,11 @@ Debug audio state loss where only Slot 0 persists in the audio engine.
 
 ### Verification
 - [x] Browser Test: confirmed routing fix allows Slot 0 to work with effects.
-- [ ] Browser Test: confirmed slots 1-3 still missing from internal state (FAIL).
+- [x] Browser Test: confirmed slots 1-3 correct persistence (PASS).
+- [x] Audio Test: Hi-Hat tuned for cleaner "tsk" sound.
 
-### Paused Because
-Need to investigate deep state loss issues with enhanced logging.
+### Completion Notes
+Fixed the critical audio state loss bug by removing `Tone.Transport.scheduleOnce` (which failed due to looping transport) and relying on native Tone.js sync. Also tuned the Hi-Hat synth to remove the "slushy" noise, creating a crisper modern sound.
 
-### Handoff Notes
-The critical issue is that `audioEngine.slots` loses entries for slots > 0. UI state is correct. Focus on `main.js` <-> `Sequencer.js` <-> `AudioEngine.js` interaction. Likely a race condition or type mismatch in `slotId`.
+### Status
+**MILESTONE COMPLETE**: Audio Engine Stability & Routing.

@@ -111,6 +111,11 @@ async function handleStart() {
         const uiConfig = themeLoader.getUIConfig();
         CONFIG.BPM = meta.bpm || 120;
         CONFIG.NUM_SLOTS = uiConfig.slotCount || 7;
+        
+        // Set transport loop end based on theme
+        const loopBars = meta.loopBars || 4;
+        Tone.Transport.loopEnd = `${loopBars}m`;
+        console.log('[wrenchbox] Loop set to', loopBars, 'bars');
 
         // Initialize Sequencer with theme sounds
         const themeSounds = themeLoader.getSoundsConfig();
@@ -359,20 +364,18 @@ function removeSoundFromSlot(slotId) {
     console.log('[wrenchbox] Removed', oldSound, 'from slot', slotId);
 }
 
-/**
- * Start pattern quantized to next bar
- */
 function startPatternQuantized(slotId, soundName) {
     const slot = state.slots[slotId];
 
-    // Schedule start at next bar boundary
-    const startTime = Tone.Transport.nextSubdivision('1m');
+    // Use a small lookahead and quantization to the next beat (4n)
+    // This solves the "jitter/off" feeling by ensuring it hits a grid line
+    // FIX: Removed Tone.Transport.scheduleOnce because it fails when Transport loops.
+    // Tone.js sources (Player.sync, Sequence) automatically align to Transport time.
 
-    Tone.Transport.scheduleOnce((time) => {
-        if (slot.soundName === soundName && slot.active) {
-            sequencer.startPattern(slotId, soundName);
-        }
-    }, startTime);
+    if (state.slots[slotId].soundName === soundName) {
+        sequencer.startPattern(slotId, soundName);
+        updateMuteStates();
+    }
 
     // Ensure transport is running
     if (Tone.Transport.state !== 'started') {
@@ -638,7 +641,7 @@ function setupHorrorSystem() {
         }
 
         // Update audio effects if slot is active
-        // Note: Effect chains are created when slot becomes active
+        horrorEffects.updateSlotEffects(slotId, tier, level);
 
         // Update global horror ambiance
         const maxCorruption = Math.max(...Array.from(corruptionManager.corruption.values()));

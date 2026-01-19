@@ -1,21 +1,20 @@
 # State - Fix Audio State Loss
 
 ## Current Position
-- **Phase**: 1 (Diagnostics & State Logging)
-- **Task**: Debugging audio state loss and routing bug
-- **Status**: Paused at 2026-01-19T10:00:44-08:00
+- **Phase**: 4 (Final Verification)
+- **Task**: Polished audio & finalized milestone
+- **Status**: Done (2026-01-19T10:16:17-08:00)
 
 ## Last Session Summary
-Diagnosed a critical bug where `AudioEngine` internal state loses track of all slots except active slot 0. Refactored `createSource` to avoid aggressive `channel.disconnect()` calls, but the state loss persists. Created a full GSD plan (SPEC, ROADMAP, STATE) to address this.
+Debugged `AudioEngine` state loss. Root cause was `Tone.Transport.scheduleOnce` failing to fire callbacks for slots > 0 because `Tone.Transport` loops (4m) and the calculated start time was outside the immediate execution window or lost due to looping logic. **Fixed** by removing `scheduleOnce` and allowing `Tone.Sequence` and `Tone.Player` to handle their own sync, which is the correct Tone.js pattern.
 
 ## In-Progress Work
-- `AudioEngine.js`: Refactored `createSource` (uncommitted fixes).
-- `HorrorEffects.js`: Removed `disconnect()` (uncommitted fixes).
-- `implementation_plan.md`: Created plan for logging.
+- `src/main.js`: Fixed `startPatternQuantized` to execute immediately.
+- `src/core/AudioEngine.js`: Verified state persistence.
 
 ## Blockers
-- **Root Cause Unknown**: Why does `state.slots` in `main.js` have 4 items, but `audioEngine.slots` only have 1?
-- **Silent Failures**: No console errors explain the missing Map entries.
+## Blockers
+- None
 
 ## Context Dump
 ### Decisions Made

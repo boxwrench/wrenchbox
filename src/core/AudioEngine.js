@@ -26,8 +26,11 @@ class AudioEngine {
         await Tone.start();
         console.log('[AudioEngine] Tone.js started, context state:', Tone.context.state);
 
-        // Set global BPM
+        // Set global BPM and enable looping (critical for Incredibox-style)
         Tone.Transport.bpm.value = 120;
+        Tone.Transport.loop = true;
+        Tone.Transport.loopStart = 0;
+        Tone.Transport.loopEnd = '4m'; // Default to 4 bars, main.js will override if needed
 
         this.initialized = true;
     }
@@ -49,43 +52,50 @@ class AudioEngine {
      */
     createSource(soundName, slotId) {
         // Create a channel for this slot
-        const channel = new Tone.Channel({ volume: 0 }).toDestination();
+        const channel = new Tone.Channel({ volume: 0 });
         this.channels.set(slotId, channel);
+
+        let mode = null;
 
         // Try sample first
         if (this.canUseSamples() && sampleManager.hasSample(soundName)) {
             const player = sampleManager.createPlayer(soundName, slotId, channel);
             if (player) {
-                this.slots.set(slotId, {
-                    mode: 'sample',
-                    player,
-                    soundName,
-                    channel
-                });
-                console.log('[AudioEngine] Using sample for:', soundName);
-                return 'sample';
+                player.sync().start(0);
+                this.slots.set(slotId, { mode: 'sample', player, soundName, channel });
+                console.log('[AudioEngine] Using synced sample for:', soundName);
+                mode = 'sample';
             }
         }
 
-        // Fall back to synth
-        // Get synth config from Sequencer (which has theme data)
-        const soundDef = Sequencer.getSound(soundName);
-        const synthConfig = soundDef?.synth || null;
-
-        const synth = this.createSynth(soundName, channel, synthConfig);
-        if (synth) {
-            this.slots.set(slotId, {
-                mode: 'synth',
-                synth,
-                soundName,
-                channel
-            });
-            console.log('[AudioEngine] Using synth for:', soundName);
-            return 'synth';
+        // Fall back to synth if no sample
+        if (!mode) {
+            const soundDef = Sequencer.getSound(soundName);
+            const synth = this.createSynth(soundName, channel, soundDef?.synth);
+            if (synth) {
+                this.slots.set(slotId, { mode: 'synth', synth, soundName, channel });
+                console.log('[AudioEngine] Using synth for:', soundName);
+                mode = 'synth';
+            }
         }
 
-        console.warn('[AudioEngine] Could not create source for:', soundName);
-        return null;
+        // Routing: delegate to horror effects or fallback to destination
+        if (mode) {
+            if (typeof horrorEffects !== 'undefined') {
+                try {
+                    horrorEffects.createEffectChain(slotId, channel);
+                } catch (err) {
+                    console.warn('[AudioEngine] Horror effects failed, falling back to direct routing:', err);
+                    channel.toDestination();
+                }
+            } else {
+                channel.toDestination();
+            }
+        } else {
+            console.warn('[AudioEngine] Failed to create source for:', soundName);
+        }
+
+        return mode;
     }
 
     /**
@@ -127,11 +137,12 @@ class AudioEngine {
                     oscillator: { type: 'sine' },
                     envelope: {
                         attack: 0.001,
-                        decay: 0.3,
+                        decay: 0.5,
                         sustain: 0,
-                        release: 0.1
+                        release: 0.2
                     }
                 }).connect(channel);
+                synth.volume.value = 3; // Boosted for maximum visibility
                 break;
 
             case 'snare':
@@ -150,16 +161,16 @@ class AudioEngine {
 
             case 'hihat':
                 synth = new Tone.MetalSynth({
-                    frequency: 300,
+                    frequency: 200,
                     envelope: {
                         attack: 0.001,
-                        decay: 0.15,
-                        release: 0.05
+                        decay: 0.05,
+                        release: 0.01
                     },
                     harmonicity: 5.1,
-                    modulationIndex: 20,
-                    resonance: 5000,
-                    octaves: 1.2
+                    modulationIndex: 32,
+                    resonance: 4000,
+                    octaves: 1.5
                 }).connect(channel);
                 synth.volume.value = -6;
                 break;
@@ -202,7 +213,7 @@ class AudioEngine {
                         octaves: 3
                     }
                 }).connect(channel);
-                synth.volume.value = -8;
+                synth.volume.value = -12; // Reduced - was too loud
                 break;
 
             case 'cursed':
@@ -265,9 +276,14 @@ class AudioEngine {
      * @param {number} time - When to start
      */
     startPlayer(slotId, time) {
+        // Since players are synced, we use their volume/mute rather than re-starting
+        // but for safety in this architecture, we ensure they are "on"
         const slot = this.slots.get(slotId);
         if (slot && slot.mode === 'sample') {
-            slot.player.start(time);
+            // If already synced and started(0), this is a no-op that ensures play state
+            if (slot.player.state !== 'started') {
+                 slot.player.start(0);
+            }
         }
     }
 
@@ -293,7 +309,7 @@ class AudioEngine {
         const { synth, soundName } = slot;
 
         if (soundName === 'kick') {
-            synth.triggerAttackRelease('C1', duration, time);
+            synth.triggerAttackRelease('C2', duration, time);
         } else if (soundName === 'snare' || soundName === 'hihat') {
             synth.triggerAttackRelease(duration, time);
         } else {
@@ -329,6 +345,11 @@ class AudioEngine {
         if (channel) {
             channel.dispose();
             this.channels.delete(slotId);
+        }
+
+        // Dispose horror effects if available
+        if (typeof horrorEffects !== 'undefined') {
+            horrorEffects.disposeEffectChain(slotId);
         }
     }
 

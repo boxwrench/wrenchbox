@@ -124,8 +124,11 @@ class Sequencer {
     /**
      * Start a sound pattern for a slot
      * Handles both sample and synth modes
+     * @param {number} slotId - Slot identifier
+     * @param {string} soundName - Sound name
+     * @param {number} time - Transport time to start at
      */
-    startPattern(slotId, soundName) {
+    startPattern(slotId, soundName, time = Tone.now()) {
         const sound = Sequencer.SOUNDS[soundName];
         if (!sound) {
             console.warn('[Sequencer] Unknown sound:', soundName);
@@ -141,11 +144,10 @@ class Sequencer {
         const mode = this.audio.createSource(soundName, slotId);
 
         if (mode === 'sample') {
-            // Sample mode: just start the looping player
-            this.audio.startPlayer(slotId, Tone.now());
+            // Sample mode: player is already synced in audioEngine.createSource
             this.activeSlots.set(slotId, { soundName, mode: 'sample' });
         } else if (mode === 'synth') {
-            // Synth mode: create and start a Tone.Sequence
+            // Synth mode: create and start a Tone.Sequence synced to Transport 0
             const sequence = new Tone.Sequence(
                 (time, note) => {
                     if (note !== null) {
@@ -156,6 +158,7 @@ class Sequencer {
                 sound.subdivision
             );
 
+            // Start sequence at 0 - Tone.js handles aligning it to current Transport position
             sequence.start(0);
             this.activeSequences.set(slotId, { sequence, soundName });
             this.activeSlots.set(slotId, { soundName, mode: 'synth' });
@@ -166,7 +169,7 @@ class Sequencer {
             Tone.Transport.start();
         }
 
-        console.log('[Sequencer] Started pattern:', soundName, 'on slot:', slotId, 'mode:', mode);
+        console.log('[Sequencer] Started pattern:', soundName, 'on slot:', slotId, 'mode:', mode, 'at time:', time);
     }
 
     /**
