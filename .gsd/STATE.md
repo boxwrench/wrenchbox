@@ -2,8 +2,8 @@
 
 ## Current Position
 - **Phase**: 4 (Assets & Polish)
-- **Task**: Fix broken instrument icons and finalize visual assets
-- **Status**: Paused at 2026-01-19T10:47:17-08:00
+- **Task**: Audit and improve Modding Guide
+- **Status**: Active (resumed 2026-01-19T10:51:27-08:00)
 
 ## Last Session Summary
 Resolved missing instrument icons. Generated 6 new "neon on black" icons for kick, snare, hi-hat, bass, lead, and cursed skull. Created a Python script (`make_icons.py`) to programmatically strip the black backgrounds for transparency. Verified via browser automation that icons load correctly and the full band plays without state loss.

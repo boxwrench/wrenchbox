@@ -114,6 +114,19 @@ Open `theme.json` in VS Code. Find the `"colors"` section:
 
 **Tip:** Use the Lock icon to keep colors you like while generating new ones.
 
+### Changing the Background
+
+Your theme's background is separate from the colors above. Look for the `"background"` section:
+
+```json
+"background": {
+    "type": "gradient",
+    "colors": ["#1a1a2e", "#16213e"]
+},
+```
+
+Change these two hex codes to update your main background gradient! Use your `primary` and `secondary` colors here if you want them to match.
+
 ### Test Your Colors
 
 1. Open the wrenchbox folder in VS Code
@@ -178,22 +191,73 @@ After downloading, use Audacity to:
 2. Trim to exactly 8 seconds (or your BPM's duration)
 3. Export as OGG
 
-### Method C: AI Music Generators
+### Method C: AI Music Generators (Recommended for Beginners)
 
-AI can create loops for you:
-- [Suno.ai](https://suno.ai) - Generate full songs, then trim
-- [AIVA](https://www.aiva.ai) - AI music composer
-- [BandLab](https://www.bandlab.com) - Free online DAW with AI features
+Modern AI tools can make instant loops. 
 
-After generating:
-1. Download the audio
-2. Open in Audacity
-3. Select the best 8-second section
-4. Export as OGG
+1. **[Suno.ai](https://suno.com)** or **[Udio](https://www.udio.com)**
+   - **Mode**: Select "Instrumental" (no lyrics).
+   - **Prompt**: Be specific! *"Minimal techno drum beat, 120bpm"*, *"Funky bassline solo, 120bpm"*.
+   - **Download**: Get the audio file.
+
+2. **[Soundraw.io](https://soundraw.io)**
+   - Great for customizing mood and length directly.
+
+### ✂️ key Step: Making it Loop Perfectly
+
+The difference between a "good" and "bad" theme is the **loop seam**. If your audio clicks or jumps when it repeats, it breaks the immersion.
+
+**How to fix it in Audacity:**
+
+1. **Import** your generated audio.
+2. **Find the Grid**: The hardest part is cutting at the exact beat.
+   - If you know the BPM (e.g. 120), exactly 4 bars = **8.000 seconds**.
+   - In Audacity at the bottom, change "Selection" to **Start and Length**.
+   - Set Length to `00h 00m 08.000s`.
+3. **Snap to Zero**:
+   - Zoom in VERY close to your start and end points.
+   - Ensure the wave line is touching the center (zero volume) line.
+   - If not, select the whole clip and press **Z** (Find Zero Crossings).
+   - This prevents that annoying "click" sound!
+4. **Export as OGG**: This format works best for web.
 
 ---
+ 
+ ## Step 5: Designing Your "Band" (Composition Guide)
+ 
+ Creating random loops is easy. Creating loops that *sound good together* is an art.
+ 
+ ### 🎵 The Golden Rules of Layering
+ 
+ 1. **Same Key**: Ensure every melodic loop is in the same key (e.g., C Minor, F# Major). If you mix keys, it will sound dissonant.
+ 2. **Same BPM**: You already know this (120 BPM etc).
+ 3. **Different Frequencies (The "Cake" Theory)**:
+    Imagine your sound is a cake with layers. You can't put two cakes in the same space.
+    - **Low Layer**: Kick drum, Bassline. (Don't play 2 basslines at once!)
+    - **Mid Layer**: Snare, Vocals, Keys, Guitars.
+    - **High Layer**: Hi-hats, Cymbals, Flutes, Lead synths.
+ 
+ ### 🥁 Which Loops Should You Make?
+ 
+ A standard Wrenchbox theme has 20 slots. Don't just make 20 drum beats! A balanced "palette" looks like this:
+ 
+ | Category | Recommended Count | Description |
+ |----------|-------------------|-------------|
+ | **Beats** | 4-5 Loops | **Kick** (Heartbeat), **Snare** (Backbeat), **Hats** (Rhythm), **Percussion** (Flavor). |
+ | **Bass** | 3-4 Loops | **Sub** (Deep), **Funk** (Groovy), **Simple** (Just root notes). |
+ | **Melodies**| 5-6 Loops | **Chords** (Pads/sustained), **Arps** (Fast moving), **Leads** (The main tune). |
+ | **Effects** | 3-4 Loops | **Risers**, **Hits**, **Vocal Chops**, **Textures**. |
+ | **Voices** | 2-3 Loops | A Capella snippets or robotic vocals. |
+ 
+ ### 💡 Pro Tip: "Call and Response"
+ Avoid having every loop play *all the time*.
+ - MAKE: A melody that plays only on the first half of the bar.
+ - MAKE: Another melody that plays only on the second half.
+ - RESULT: When played together, they "talk" to each other instead of shouting over each other.
+ 
+ ---
 
-## Step 5: Add Sounds to Your Theme
+## Step 6: Add Sounds to Your Theme
 
 1. Put your audio files in the `sounds/` folder:
    ```
@@ -244,49 +308,56 @@ After generating:
 
 ---
 
-## Step 6: Create Icons (Optional)
-
-You have three options for sound icons:
-
-### Option A: Use Emojis (Easiest!)
-
-Just set `iconEmoji` in your theme.json:
-```json
-"kick": {
-    "iconEmoji": "🥁",
-    ...
-}
-```
-
-Find emojis at [emojipedia.org](https://emojipedia.org)
-
-### Option B: Simple Icons with Canva
-
-1. Go to [canva.com](https://canva.com) (free account)
-2. Create a new design: **Custom size 128 x 128 px**
-3. Use "Elements" to find shapes and icons
-4. Download as PNG with transparent background
-5. Save to your theme's `icons/` folder
-
-### Option C: Custom Icons with GIMP
-
-1. Create new image: 128 x 128 pixels, transparent background
-2. Draw your icon
-3. Export as PNG
-4. Save to `icons/` folder
-
-Then update theme.json:
-```json
-"kick": {
-    "icon": "icons/kick.png",
-    "iconEmoji": "🥁",  <-- Fallback if image fails
-    ...
-}
-```
+## Step 7: Create Icons (Optional)
+ 
+ You have three options for sound icons:
+ 
+ ### Option A: Use Emojis (Easiest!)
+ 
+ Just set `iconEmoji` in your theme.json. They work everywhere and look great!
+ ```json
+ "kick": {
+     "iconEmoji": "🥁",
+     ...
+ }
+ ```
+ 
+ Find emojis at [emojipedia.org](https://emojipedia.org)
+ 
+ ### Option B: AI Generation (Recommended)
+ 
+ You can use AI tools like Bing Image Creator, Midjourney, or DALL-E 3 to make cool icons.
+ 
+ 1. **Prompt for "Icon"**: Ask for an "app icon" or "badge" to get a clean look.
+    * Example: *"Neon red drum icon, black background, minimal vector style, square"*
+ 2. **Save as PNG or JPG**: These formats are perfect.
+ 3. **Use Square Images**: Aim for **512x512** or **256x256** pixels. They will be resized automatically.
+ 
+ **Pro Tip: Faking Transparency**
+ AI images usually have a background color (like black). Instead of trying to delete it, just match your icon's background to your theme's background!
+ 
+ - If your theme is dark (`#1a1a2e`), ask for an icon with a "dark blue background".
+ - Or just use a black background and set your icon style to blend in.
+ 
+ ### Option C: Custom Design (Canva/GIMP)
+ 
+ 1. Create a **Square Design** (e.g. 256x256 px).
+ 2. Draw your icon.
+ 3. Save as PNG (transparency is supported if you know how to use it, but not required!).
+ 4. Save to `icons/` folder.
+ 
+ Then update theme.json:
+ ```json
+ "kick": {
+     "icon": "icons/kick.png",
+     "iconEmoji": "🥁",  <-- Fallback if image fails
+     ...
+ }
+ ```
 
 ---
 
-## Step 7: Set Up Bonuses
+## Step 8: Set Up Bonuses
 
 Bonuses are special combos that trigger animations when you play certain sounds together.
 
@@ -320,7 +391,7 @@ Bonuses are special combos that trigger animations when you play certain sounds 
 
 ---
 
-## Step 8: Configure Horror Mode (Optional)
+## Step 9: Configure Horror Mode (Optional)
 
 The corruption/horror mode adds a creepy twist where sounds become distorted.
 
@@ -352,7 +423,7 @@ The corruption/horror mode adds a creepy twist where sounds become distorted.
 
 ---
 
-## Step 9: Test Everything
+## Step 10: Test Everything
 
 ### Testing Checklist
 
@@ -385,7 +456,7 @@ If you see "using synths" instead of your samples, you need to run a server:
 
 ---
 
-## Step 10: Share Your Theme!
+## Step 11: Share Your Theme!
 
 ### Option A: Share the Files
 
