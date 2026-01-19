@@ -179,6 +179,28 @@ class AudioEngine {
                 synth.volume.value = -8;
                 break;
 
+            case 'cursed':
+                // Creepy detuned synth for horror mode trigger
+                synth = new Tone.MonoSynth({
+                    oscillator: { type: 'sawtooth' },
+                    envelope: {
+                        attack: 0.1,
+                        decay: 0.4,
+                        sustain: 0.6,
+                        release: 0.8
+                    },
+                    filterEnvelope: {
+                        attack: 0.05,
+                        decay: 0.3,
+                        sustain: 0.4,
+                        release: 0.5,
+                        baseFrequency: 100,
+                        octaves: 2
+                    }
+                }).connect(channel);
+                synth.volume.value = -4;
+                break;
+
             default:
                 console.warn('[AudioEngine] Unknown sound type:', soundName);
                 return null;

@@ -57,6 +57,15 @@ class Sequencer {
             pattern: ['G4', 'Eb4', null, 'C4', 'G4', 'Eb4', 'Bb4', 'G4',
                       'C5', 'Bb4', null, 'G4', 'Eb4', 'C4', 'Eb4', 'G4'],
             subdivision: '16n'
+        },
+        // CURSED SOUND - triggers horror mode
+        cursed: {
+            type: 'cursed',
+            icon: '💀',
+            cursed: true,  // Flag to trigger horror mode
+            pattern: ['C1', null, 'Eb1', null, 'C1', 'C1', null, 'Gb1',
+                      null, 'C1', null, 'Eb1', 'Gb1', null, 'C1', null],
+            subdivision: '16n'
         }
     };
 

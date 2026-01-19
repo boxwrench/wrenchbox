@@ -20,6 +20,7 @@
     --color-melodies: #44ff88;
     --color-voices: #ffdd44;
     --color-bass: #ff88ff;
+    --color-cursed: #660000;
 
     /* Sizing */
     --slot-size: 100px;
@@ -275,6 +276,7 @@ body {
 .sound-icon[data-type="melodies"] { background: var(--color-melodies); }
 .sound-icon[data-type="voices"] { background: var(--color-voices); }
 .sound-icon[data-type="bass"] { background: var(--color-bass); }
+.sound-icon[data-type="cursed"] { background: var(--color-cursed); }
 
 /* Phase indicator */
 .phase-badge {
@@ -611,4 +613,181 @@ body.is-dragging .slot.empty {
 @keyframes badge-glow {
     0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
     50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+}
+
+/* ========================================
+   Phase 6: Horror Mode / Corruption Styles
+   ======================================== */
+
+/* Cursed sound icon */
+.sound-icon.cursed {
+    background: linear-gradient(135deg, #1a0a0a 0%, #3d0000 100%) !important;
+    border: 2px solid #ff0000;
+    animation: cursed-pulse 1s ease infinite;
+}
+
+.sound-icon.cursed::after {
+    content: '☠';
+    position: absolute;
+    font-size: 0.5em;
+    top: -5px;
+    right: -5px;
+}
+
+@keyframes cursed-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(255, 0, 0, 0.8); }
+}
+
+/* Corruption tiers - Visual Effects */
+.corruption-none {
+    /* No effects */
+}
+
+.corruption-low {
+    filter: hue-rotate(calc(var(--corruption-level, 0) * 30deg));
+    animation: corruption-wobble 2s ease infinite;
+}
+
+.corruption-medium {
+    filter: hue-rotate(calc(var(--corruption-level, 0) * 60deg))
+            saturate(calc(1 - var(--corruption-level, 0) * 0.3));
+    animation: corruption-glitch 0.5s steps(2) infinite;
+}
+
+.corruption-high {
+    filter: hue-rotate(calc(var(--corruption-level, 0) * 120deg))
+            saturate(0.5)
+            contrast(1.2);
+    animation: corruption-glitch-hard 0.2s steps(3) infinite;
+}
+
+.corruption-full {
+    filter: invert(0.9) hue-rotate(180deg) contrast(1.5) saturate(1.5);
+    animation: corruption-full 0.15s steps(2) infinite;
+}
+
+/* Corruption animations */
+@keyframes corruption-wobble {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.01) rotate(0.5deg); }
+    75% { transform: scale(0.99) rotate(-0.5deg); }
+}
+
+@keyframes corruption-glitch {
+    0% { transform: translate(0); clip-path: inset(0 0 0 0); }
+    25% { transform: translate(-2px, 1px); clip-path: inset(10% 0 60% 0); }
+    50% { transform: translate(2px, -1px); clip-path: inset(40% 0 20% 0); }
+    75% { transform: translate(-1px, 2px); clip-path: inset(70% 0 5% 0); }
+    100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+}
+
+@keyframes corruption-glitch-hard {
+    0% { transform: translate(0) skew(0); }
+    20% { transform: translate(-3px, 2px) skew(2deg); }
+    40% { transform: translate(3px, -2px) skew(-2deg); }
+    60% { transform: translate(-2px, -1px) skew(1deg); }
+    80% { transform: translate(2px, 1px) skew(-1deg); }
+    100% { transform: translate(0) skew(0); }
+}
+
+@keyframes corruption-full {
+    0%, 100% {
+        transform: translate(0) scale(1);
+        filter: invert(0.9) hue-rotate(180deg) contrast(1.5);
+    }
+    50% {
+        transform: translate(2px, -2px) scale(1.02);
+        filter: invert(0.85) hue-rotate(200deg) contrast(1.8);
+    }
+}
+
+/* Slot corruption glow */
+.slot.corruption-low {
+    box-shadow: 0 0 20px rgba(128, 0, 128, 0.4);
+}
+
+.slot.corruption-medium {
+    box-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+    border-color: #8b0000 !important;
+}
+
+.slot.corruption-high {
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.6);
+    border-color: #ff0000 !important;
+}
+
+.slot.corruption-full {
+    box-shadow: 0 0 50px rgba(255, 0, 0, 0.8),
+                0 0 100px rgba(139, 0, 0, 0.4);
+    border-color: #ff0000 !important;
+}
+
+/* Horror mode body effects */
+body.horror-mode {
+    animation: horror-bg 5s ease infinite;
+}
+
+body.horror-mode::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%);
+    pointer-events: none;
+    z-index: 9999;
+    animation: horror-vignette 3s ease infinite;
+}
+
+@keyframes horror-bg {
+    0%, 100% {
+        background: linear-gradient(135deg, #1a0a0a 0%, #0a0a1a 100%);
+    }
+    50% {
+        background: linear-gradient(135deg, #1a0000 0%, #000a1a 100%);
+    }
+}
+
+@keyframes horror-vignette {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+}
+
+/* Horror mode header */
+body.horror-mode .header h1 {
+    color: #ff0000;
+    text-shadow: 0 0 10px #ff0000, 0 0 20px #8b0000;
+    animation: horror-text 0.5s steps(2) infinite;
+}
+
+@keyframes horror-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; transform: translateX(1px); }
+}
+
+/* Cure button (appears during horror mode) */
+.cure-btn {
+    display: none;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #00ff00 0%, #008800 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    animation: cure-pulse 1s ease infinite;
+}
+
+body.horror-mode .cure-btn {
+    display: block;
+}
+
+@keyframes cure-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(0, 255, 0, 0.8); }
+}
+
+/* Horror mode palette */
+body.horror-mode .palette {
+    background: rgba(50, 0, 0, 0.5);
+    border: 1px solid rgba(255, 0, 0, 0.3);
 }

@@ -1,11 +1,12 @@
 /**
  * wrenchbox - Main Application
- * Phase 5: Bonus system with combo detection
+ * Phase 6: Horror mode with corruption spread
  *
  * Learning goals:
- * - Combo detection
- * - Bonus overlay animations
- * - Event-driven feedback
+ * - Cellular automata for corruption spread
+ * - Real-time audio effect manipulation
+ * - Progressive visual corruption
+ * - State-driven transformation
  */
 
 // App state
@@ -27,7 +28,8 @@ const SOUND_ICONS = {
     snare: '🪘',
     hihat: '🎩',
     bass: '🎸',
-    lead: '🎹'
+    lead: '🎹',
+    cursed: '💀'
 };
 
 /**
@@ -79,9 +81,13 @@ async function handleStart() {
         // Initialize bonus system
         setupBonusSystem();
 
+        // Initialize horror mode system
+        setupHorrorSystem();
+
         createSlots();
         createSoundIcons();
         createBonusIndicator();
+        createCureButton();
         setupDragDrop();
         setupEventListeners();
         updateBpmDisplay();
@@ -93,7 +99,7 @@ async function handleStart() {
         state.initialized = true;
 
         const mode = audioEngine.canUseSamples() && sampleManager.loaded ? 'samples' : 'synths';
-        console.log('[wrenchbox] Phase 5 ready, using:', mode);
+        console.log('[wrenchbox] Phase 6 ready, using:', mode);
     } catch (err) {
         console.error('[wrenchbox] Failed to initialize:', err);
         startContent.textContent = 'Error: ' + err.message;
@@ -151,6 +157,12 @@ function createSoundIcons() {
         icon.dataset.type = sound.type;
         icon.innerHTML = SOUND_ICONS[soundName];
         icon.title = `Drag ${soundName} to a slot`;
+
+        // Mark cursed sounds
+        if (sound.cursed) {
+            icon.classList.add('cursed');
+            icon.title = `⚠️ CURSED: ${soundName} - triggers horror mode!`;
+        }
 
         container.appendChild(icon);
     }
@@ -210,6 +222,11 @@ function assignSoundToSlot(slotId, soundName) {
 
     // Check for bonus triggers
     checkForBonus();
+
+    // Check if this is a cursed sound - trigger horror mode
+    if (sound.cursed && !corruptionManager.isHorrorMode()) {
+        corruptionManager.startCorruption(slotId);
+    }
 
     console.log('[wrenchbox] Assigned', soundName, 'to slot', slotId);
 }
@@ -410,6 +427,10 @@ function resetAll() {
     bonusManager.reset();
     updateBonusIndicator();
 
+    // Reset horror mode
+    corruptionManager.reset();
+    horrorEffects.reset();
+
     console.log('[wrenchbox] Reset');
 }
 
@@ -506,6 +527,75 @@ function checkForBonus() {
     if (bonus) {
         bonusManager.triggerBonus(bonus);
     }
+}
+
+/**
+ * Set up the horror mode system
+ */
+function setupHorrorSystem() {
+    // Initialize corruption manager
+    corruptionManager.init(CONFIG.NUM_SLOTS);
+
+    // Initialize horror effects
+    horrorEffects.init();
+
+    // Set up callbacks
+    corruptionManager.onCorruptionChanged = (slotId, level, tier) => {
+        // Update visual effects on slot
+        const slot = state.slots[slotId];
+        if (slot && slot.element) {
+            horrorEffects.applyVisualCorruption(slot.element, tier, level);
+        }
+
+        // Update audio effects if slot is active
+        // Note: Effect chains are created when slot becomes active
+
+        // Update global horror ambiance
+        const maxCorruption = Math.max(...Array.from(corruptionManager.corruption.values()));
+        horrorEffects.updateGlobalEffects(maxCorruption);
+    };
+
+    corruptionManager.onHorrorModeStart = () => {
+        document.body.classList.add('horror-mode');
+        console.log('[wrenchbox] HORROR MODE ACTIVATED');
+    };
+
+    corruptionManager.onHorrorModeEnd = () => {
+        document.body.classList.remove('horror-mode');
+
+        // Clear all visual corruption
+        for (const slot of state.slots) {
+            if (slot.element) {
+                horrorEffects.applyVisualCorruption(slot.element, 'none', 0);
+            }
+        }
+
+        // Reset audio effects
+        horrorEffects.reset();
+
+        console.log('[wrenchbox] Horror mode ended - peace restored');
+    };
+
+    console.log('[wrenchbox] Horror system initialized');
+}
+
+/**
+ * Create cure button in header
+ */
+function createCureButton() {
+    const controls = document.querySelector('.controls');
+    if (!controls) return;
+
+    const cureBtn = document.createElement('button');
+    cureBtn.className = 'cure-btn';
+    cureBtn.textContent = '🌿 Cure';
+    cureBtn.title = 'Reduce corruption (or reset to fully cure)';
+
+    cureBtn.addEventListener('click', () => {
+        corruptionManager.cure(30);
+    });
+
+    controls.appendChild(cureBtn);
 }
 
 /**
