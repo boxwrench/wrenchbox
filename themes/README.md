@@ -2,7 +2,22 @@
 
 Create custom themes by adding folders here. Each theme is self-contained with its own config and assets.
 
-**New to theming?** Check out the [Complete Modding Guide](../docs/MODDING_GUIDE.md) - a step-by-step tutorial for beginners with no coding experience!
+---
+
+## Never Made a Theme Before?
+
+We have a **[Beginner's Guide](../docs/MODDING_GUIDE.md)** that walks you through everything from scratch.
+
+It covers:
+- What free software to download
+- How to make your own music loops
+- How to pick colors that look good together
+- How to test your theme in a browser
+- Common mistakes and how to fix them
+
+No coding experience needed. Just follow along step by step.
+
+---
 
 ## Quick Start
 
