@@ -1,12 +1,12 @@
 /**
  * Sequencer - Pattern-based timing for wrenchbox using Tone.js
- * Phase 1: Uses Tone.Transport and Tone.Sequence for precise timing
+ * Phase 3: Supports both sample loops and synth patterns
  *
  * Learning goals:
- * - Tone.Transport for global timing (lookahead scheduling built-in)
- * - Tone.Sequence for pattern playback
- * - Pattern arrays (0 = rest, note values = trigger)
- * - Coordinating multiple sequences
+ * - Tone.Transport for global timing
+ * - Tone.Sequence for synth pattern playback
+ * - Tone.Player for sample loops
+ * - Coordinating both modes
  */
 
 class Sequencer {
@@ -14,23 +14,21 @@ class Sequencer {
         this.audio = audioEngine;
         this.bpm = bpm;
 
-        // Active sequences: slotId -> Tone.Sequence
+        // Active sequences (synth mode only): slotId -> Tone.Sequence
         this.activeSequences = new Map();
 
-        // Track which slots are active
-        this.activeSlots = new Set();
+        // Track which slots are active and their mode
+        this.activeSlots = new Map(); // slotId -> { soundName, mode }
     }
 
     /**
-     * Sound definitions with patterns
+     * Sound definitions with patterns (for synth mode)
      * Pattern values: null = rest, note string = trigger
-     * Using Tone.js note format (e.g., "C2", "E4")
      */
     static SOUNDS = {
         kick: {
             type: 'beats',
             icon: '🥁',
-            // 8 steps (8th notes in one bar at 4/4)
             pattern: ['C1', null, null, null, 'C1', null, null, null],
             subdivision: '8n'
         },
@@ -49,7 +47,6 @@ class Sequencer {
         bass: {
             type: 'bass',
             icon: '🎸',
-            // 16 steps (16th notes), using notes from C minor scale
             pattern: ['C2', null, null, 'C2', 'Eb2', 'C2', null, 'G2',
                       null, 'C2', null, 'Eb2', 'G2', 'Eb2', 'C2', null],
             subdivision: '16n'
@@ -57,7 +54,6 @@ class Sequencer {
         lead: {
             type: 'melodies',
             icon: '🎹',
-            // 16 steps, melody in C minor
             pattern: ['G4', 'Eb4', null, 'C4', 'G4', 'Eb4', 'Bb4', 'G4',
                       'C5', 'Bb4', null, 'G4', 'Eb4', 'C4', 'Eb4', 'G4'],
             subdivision: '16n'
@@ -79,7 +75,7 @@ class Sequencer {
     }
 
     /**
-     * Initialize the sequencer (set BPM on Transport)
+     * Initialize the sequencer
      */
     init() {
         Tone.Transport.bpm.value = this.bpm;
@@ -88,6 +84,7 @@ class Sequencer {
 
     /**
      * Start a sound pattern for a slot
+     * Handles both sample and synth modes
      */
     startPattern(slotId, soundName) {
         const sound = Sequencer.SOUNDS[soundName];
@@ -97,56 +94,70 @@ class Sequencer {
         }
 
         // Stop existing pattern on this slot if any
-        if (this.activeSequences.has(slotId)) {
+        if (this.activeSlots.has(slotId)) {
             this.stopPattern(slotId);
         }
 
-        // Create synth for this slot
-        this.audio.createSynth(soundName, slotId);
+        // Create audio source (sample or synth)
+        const mode = this.audio.createSource(soundName, slotId);
 
-        // Create Tone.Sequence for this pattern
-        const sequence = new Tone.Sequence(
-            (time, note) => {
-                if (note !== null) {
-                    this.audio.triggerSound(slotId, note, sound.subdivision, time);
-                }
-            },
-            sound.pattern,
-            sound.subdivision
-        );
+        if (mode === 'sample') {
+            // Sample mode: just start the looping player
+            this.audio.startPlayer(slotId, Tone.now());
+            this.activeSlots.set(slotId, { soundName, mode: 'sample' });
+        } else if (mode === 'synth') {
+            // Synth mode: create and start a Tone.Sequence
+            const sequence = new Tone.Sequence(
+                (time, note) => {
+                    if (note !== null) {
+                        this.audio.triggerSound(slotId, note, sound.subdivision, time);
+                    }
+                },
+                sound.pattern,
+                sound.subdivision
+            );
 
-        // Start the sequence
-        sequence.start(0);
-        this.activeSequences.set(slotId, { sequence, soundName });
-        this.activeSlots.add(slotId);
+            sequence.start(0);
+            this.activeSequences.set(slotId, { sequence, soundName });
+            this.activeSlots.set(slotId, { soundName, mode: 'synth' });
+        }
 
         // Start Transport if not running
         if (Tone.Transport.state !== 'started') {
             Tone.Transport.start();
         }
 
-        console.log('[Sequencer] Started pattern:', soundName, 'on slot:', slotId);
+        console.log('[Sequencer] Started pattern:', soundName, 'on slot:', slotId, 'mode:', mode);
     }
 
     /**
      * Stop a pattern
      */
     stopPattern(slotId) {
-        const seqData = this.activeSequences.get(slotId);
-        if (seqData) {
-            seqData.sequence.stop();
-            seqData.sequence.dispose();
-            this.activeSequences.delete(slotId);
+        const slotInfo = this.activeSlots.get(slotId);
+        if (!slotInfo) return;
+
+        if (slotInfo.mode === 'sample') {
+            // Stop the player
+            this.audio.stopPlayer(slotId, Tone.now());
+        } else if (slotInfo.mode === 'synth') {
+            // Stop and dispose the sequence
+            const seqData = this.activeSequences.get(slotId);
+            if (seqData) {
+                seqData.sequence.stop();
+                seqData.sequence.dispose();
+                this.activeSequences.delete(slotId);
+            }
         }
 
-        // Dispose the synth
-        this.audio.disposeSynth(slotId);
+        // Dispose the audio source
+        this.audio.disposeSlot(slotId);
         this.activeSlots.delete(slotId);
 
         console.log('[Sequencer] Stopped slot:', slotId);
 
         // Stop Transport if no patterns active
-        if (this.activeSequences.size === 0) {
+        if (this.activeSlots.size === 0) {
             Tone.Transport.stop();
             Tone.Transport.position = 0;
         }
@@ -163,15 +174,33 @@ class Sequencer {
      * Get all active slot IDs
      */
     getActiveSlots() {
-        return Array.from(this.activeSlots);
+        return Array.from(this.activeSlots.keys());
+    }
+
+    /**
+     * Get mode for a slot
+     */
+    getSlotMode(slotId) {
+        const info = this.activeSlots.get(slotId);
+        return info ? info.mode : null;
+    }
+
+    /**
+     * Toggle A/B variation for a slot (sample mode only)
+     */
+    toggleVariation(slotId) {
+        const info = this.activeSlots.get(slotId);
+        if (info && info.mode === 'sample') {
+            this.audio.toggleVariation(slotId);
+        }
     }
 
     /**
      * Reset everything
      */
     reset() {
-        // Stop all sequences
-        for (const slotId of this.activeSequences.keys()) {
+        // Stop all patterns
+        for (const slotId of this.activeSlots.keys()) {
             this.stopPattern(slotId);
         }
 
@@ -202,7 +231,7 @@ class Sequencer {
     }
 
     /**
-     * Get current transport position (for visualizations)
+     * Get current transport position
      */
     getPosition() {
         return Tone.Transport.position;

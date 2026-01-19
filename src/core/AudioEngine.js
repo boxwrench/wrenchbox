@@ -1,19 +1,20 @@
 /**
  * AudioEngine - Tone.js wrapper for wrenchbox
- * Phase 1: Synthesized sounds using Tone.js synths
+ * Phase 3: Supports both samples (Tone.Player) and synths (fallback)
  *
  * Learning goals:
- * - Tone.js synth types (MembraneSynth, NoiseSynth, MetalSynth, MonoSynth)
- * - Tone.Transport for global timing
+ * - Tone.Player for sample playback
+ * - Tone.js synths as fallback
+ * - Unified interface for both modes
  * - Tone.Channel for per-slot routing
- * - Proper audio context initialization
  */
 
 class AudioEngine {
     constructor() {
         this.initialized = false;
-        this.synths = new Map();  // slotId -> synth instance
+        this.slots = new Map();    // slotId -> { mode, synth?, player?, soundName, channel }
         this.channels = new Map(); // slotId -> Tone.Channel
+        this.useSamples = true;    // Try samples first, fall back to synths
     }
 
     /**
@@ -32,19 +33,68 @@ class AudioEngine {
     }
 
     /**
-     * Create synths for all sound types
-     * Each synth is connected to its own channel for independent volume control
+     * Check if samples can be loaded (requires HTTP server)
      */
-    createSynth(soundName, slotId) {
-        // Create a channel for this slot (allows mute/solo later)
+    canUseSamples() {
+        return this.useSamples &&
+               typeof sampleManager !== 'undefined' &&
+               window.location.protocol !== 'file:';
+    }
+
+    /**
+     * Create audio source for a slot (sample or synth)
+     * @param {string} soundName - The sound to create
+     * @param {number} slotId - Slot identifier
+     * @returns {string} 'sample' or 'synth' indicating which mode was used
+     */
+    createSource(soundName, slotId) {
+        // Create a channel for this slot
         const channel = new Tone.Channel({ volume: 0 }).toDestination();
         this.channels.set(slotId, channel);
 
+        // Try sample first
+        if (this.canUseSamples() && sampleManager.hasSample(soundName)) {
+            const player = sampleManager.createPlayer(soundName, slotId, channel);
+            if (player) {
+                this.slots.set(slotId, {
+                    mode: 'sample',
+                    player,
+                    soundName,
+                    channel
+                });
+                console.log('[AudioEngine] Using sample for:', soundName);
+                return 'sample';
+            }
+        }
+
+        // Fall back to synth
+        const synth = this.createSynth(soundName, channel);
+        if (synth) {
+            this.slots.set(slotId, {
+                mode: 'synth',
+                synth,
+                soundName,
+                channel
+            });
+            console.log('[AudioEngine] Using synth for:', soundName);
+            return 'synth';
+        }
+
+        console.warn('[AudioEngine] Could not create source for:', soundName);
+        return null;
+    }
+
+    /**
+     * Create a synth for a sound type
+     * @param {string} soundName - The sound type
+     * @param {Tone.Channel} channel - Output channel
+     * @returns {Object} Synth instance
+     */
+    createSynth(soundName, channel) {
         let synth;
 
         switch (soundName) {
             case 'kick':
-                // MembraneSynth: Pitched membrane with quick decay (kick drums)
                 synth = new Tone.MembraneSynth({
                     pitchDecay: 0.05,
                     octaves: 6,
@@ -59,7 +109,6 @@ class AudioEngine {
                 break;
 
             case 'snare':
-                // NoiseSynth: Filtered noise burst (snare, hats)
                 synth = new Tone.NoiseSynth({
                     noise: { type: 'white' },
                     envelope: {
@@ -69,13 +118,11 @@ class AudioEngine {
                         release: 0.05
                     }
                 }).connect(channel);
-                // Add bandpass filter for snare character
                 const snareFilter = new Tone.Filter(3000, 'bandpass').connect(channel);
                 synth.connect(snareFilter);
                 break;
 
             case 'hihat':
-                // MetalSynth: Metallic, inharmonic tones (hats, cymbals)
                 synth = new Tone.MetalSynth({
                     frequency: 300,
                     envelope: {
@@ -92,7 +139,6 @@ class AudioEngine {
                 break;
 
             case 'bass':
-                // MonoSynth: Single oscillator with filter (bass, leads)
                 synth = new Tone.MonoSynth({
                     oscillator: { type: 'triangle' },
                     envelope: {
@@ -113,7 +159,6 @@ class AudioEngine {
                 break;
 
             case 'lead':
-                // MonoSynth with square wave for bright leads
                 synth = new Tone.MonoSynth({
                     oscillator: { type: 'square' },
                     envelope: {
@@ -131,7 +176,7 @@ class AudioEngine {
                         octaves: 3
                     }
                 }).connect(channel);
-                synth.volume.value = -8; // Square waves are loud
+                synth.volume.value = -8;
                 break;
 
             default:
@@ -139,50 +184,97 @@ class AudioEngine {
                 return null;
         }
 
-        this.synths.set(slotId, { synth, soundName });
         return synth;
     }
 
     /**
-     * Trigger a synth to play a note
+     * Get the mode for a slot ('sample' or 'synth')
+     */
+    getMode(slotId) {
+        const slot = this.slots.get(slotId);
+        return slot ? slot.mode : null;
+    }
+
+    /**
+     * Get the synth for a slot (for sequencer triggering)
+     */
+    getSynth(slotId) {
+        const slot = this.slots.get(slotId);
+        return slot && slot.mode === 'synth' ? slot.synth : null;
+    }
+
+    /**
+     * Get the player for a slot
+     */
+    getPlayer(slotId) {
+        const slot = this.slots.get(slotId);
+        return slot && slot.mode === 'sample' ? slot.player : null;
+    }
+
+    /**
+     * Start a sample player (for sample mode)
      * @param {number} slotId - Slot identifier
-     * @param {string|number} note - Note to play (e.g., 'C2' for bass, or frequency)
-     * @param {string} duration - Duration (e.g., '8n' for eighth note)
-     * @param {number} time - When to play (Tone.Transport time)
+     * @param {number} time - When to start
+     */
+    startPlayer(slotId, time) {
+        const slot = this.slots.get(slotId);
+        if (slot && slot.mode === 'sample') {
+            slot.player.start(time);
+        }
+    }
+
+    /**
+     * Stop a sample player (for sample mode)
+     * @param {number} slotId - Slot identifier
+     * @param {number} time - When to stop
+     */
+    stopPlayer(slotId, time) {
+        const slot = this.slots.get(slotId);
+        if (slot && slot.mode === 'sample') {
+            slot.player.stop(time);
+        }
+    }
+
+    /**
+     * Trigger a synth note (for synth mode, called by Sequencer)
      */
     triggerSound(slotId, note, duration = '8n', time) {
-        const synthData = this.synths.get(slotId);
-        if (!synthData) return;
+        const slot = this.slots.get(slotId);
+        if (!slot || slot.mode !== 'synth') return;
 
-        const { synth, soundName } = synthData;
+        const { synth, soundName } = slot;
 
-        // Different trigger methods for different synth types
         if (soundName === 'kick') {
             synth.triggerAttackRelease('C1', duration, time);
         } else if (soundName === 'snare' || soundName === 'hihat') {
             synth.triggerAttackRelease(duration, time);
         } else {
-            // Bass and lead need actual notes
             synth.triggerAttackRelease(note, duration, time);
         }
     }
 
     /**
-     * Get the synth for a slot
+     * Toggle A/B variation (sample mode only)
      */
-    getSynth(slotId) {
-        const data = this.synths.get(slotId);
-        return data ? data.synth : null;
+    toggleVariation(slotId) {
+        const slot = this.slots.get(slotId);
+        if (slot && slot.mode === 'sample') {
+            sampleManager.toggleVariation(slotId);
+        }
     }
 
     /**
-     * Dispose of a synth (clean up)
+     * Dispose a slot's audio resources
      */
-    disposeSynth(slotId) {
-        const synthData = this.synths.get(slotId);
-        if (synthData) {
-            synthData.synth.dispose();
-            this.synths.delete(slotId);
+    disposeSlot(slotId) {
+        const slot = this.slots.get(slotId);
+        if (slot) {
+            if (slot.mode === 'sample') {
+                sampleManager.disposePlayer(slotId);
+            } else if (slot.synth) {
+                slot.synth.dispose();
+            }
+            this.slots.delete(slotId);
         }
 
         const channel = this.channels.get(slotId);
@@ -193,16 +285,16 @@ class AudioEngine {
     }
 
     /**
-     * Dispose all synths
+     * Dispose all slots
      */
     disposeAll() {
-        for (const slotId of this.synths.keys()) {
-            this.disposeSynth(slotId);
+        for (const slotId of this.slots.keys()) {
+            this.disposeSlot(slotId);
         }
     }
 
     /**
-     * Mute a slot (Phase 2 feature, but set up the infrastructure)
+     * Mute a slot
      */
     muteSlot(slotId, muted) {
         const channel = this.channels.get(slotId);
@@ -212,7 +304,7 @@ class AudioEngine {
     }
 
     /**
-     * Solo a slot (mute all others)
+     * Solo a slot
      */
     soloSlot(slotId, solo) {
         const channel = this.channels.get(slotId);
@@ -229,6 +321,15 @@ class AudioEngine {
         if (channel) {
             channel.volume.value = volumeDb;
         }
+    }
+
+    // Legacy methods for backwards compatibility
+    createSynthLegacy(soundName, slotId) {
+        return this.createSource(soundName, slotId);
+    }
+
+    disposeSynth(slotId) {
+        return this.disposeSlot(slotId);
     }
 }
 

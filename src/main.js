@@ -1,11 +1,11 @@
 /**
  * wrenchbox - Main Application
- * Phase 2: Drag-drop interface with mute/solo
+ * Phase 3: Sample-based audio with synth fallback
  *
  * Learning goals:
- * - Drag-drop integration
- * - Mute/solo state management
- * - Quantized sound activation
+ * - Sample preloading
+ * - Graceful fallback to synths
+ * - Loading progress feedback
  */
 
 // App state
@@ -47,9 +47,31 @@ async function handleStart() {
 
     const overlay = document.getElementById('startOverlay');
     const app = document.getElementById('app');
+    const startContent = overlay.querySelector('.start-content p');
 
     try {
+        // Update overlay to show loading
+        startContent.textContent = 'Initializing audio...';
+
         await audioEngine.init();
+
+        // Try to preload samples (only works on HTTP, not file://)
+        if (typeof sampleManager !== 'undefined' && typeof SAMPLE_CONFIG !== 'undefined') {
+            if (window.location.protocol !== 'file:') {
+                startContent.textContent = 'Loading samples...';
+                sampleManager.registerSamples(SAMPLE_CONFIG);
+
+                try {
+                    await sampleManager.preload((progress, name) => {
+                        startContent.textContent = `Loading: ${name} (${Math.round(progress * 100)}%)`;
+                    });
+                } catch (err) {
+                    console.warn('[wrenchbox] Sample preload failed, using synths:', err);
+                }
+            } else {
+                console.log('[wrenchbox] Running from file://, using synths (samples require HTTP server)');
+            }
+        }
 
         window.sequencer = new Sequencer(audioEngine, CONFIG.BPM);
         sequencer.init();
@@ -59,14 +81,18 @@ async function handleStart() {
         setupDragDrop();
         setupEventListeners();
         updateBpmDisplay();
+        updateModeIndicator();
 
         overlay.style.display = 'none';
         app.style.display = 'flex';
 
         state.initialized = true;
-        console.log('[wrenchbox] Phase 2: Drag-drop ready');
+
+        const mode = audioEngine.canUseSamples() && sampleManager.loaded ? 'samples' : 'synths';
+        console.log('[wrenchbox] Phase 3 ready, using:', mode);
     } catch (err) {
         console.error('[wrenchbox] Failed to initialize:', err);
+        startContent.textContent = 'Error: ' + err.message;
     }
 }
 
@@ -383,6 +409,20 @@ function updateBpmDisplay() {
     const display = document.getElementById('bpmDisplay');
     if (display) {
         display.textContent = `${CONFIG.BPM} BPM`;
+    }
+}
+
+/**
+ * Update mode indicator (samples vs synths)
+ */
+function updateModeIndicator() {
+    const badge = document.querySelector('.phase-badge');
+    if (badge) {
+        const hasSamples = typeof sampleManager !== 'undefined' &&
+                          sampleManager.loaded &&
+                          window.location.protocol !== 'file:';
+        const mode = hasSamples ? '(Samples)' : '(Synths)';
+        badge.textContent = `Phase 3: Sample-Based Audio ${mode}`;
     }
 }
 
