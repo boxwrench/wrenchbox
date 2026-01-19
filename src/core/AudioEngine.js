@@ -1,246 +1,234 @@
 /**
- * AudioEngine - Web Audio API wrapper for wrenchbox
- * Phase 1: Synthesized sounds (oscillators + noise)
+ * AudioEngine - Tone.js wrapper for wrenchbox
+ * Phase 1: Synthesized sounds using Tone.js synths
  *
  * Learning goals:
- * - AudioContext lifecycle
- * - Oscillator types (sine, triangle, square, sawtooth)
- * - Noise generation with buffers
- * - Gain nodes for volume control
- * - Biquad filters for shaping sound
+ * - Tone.js synth types (MembraneSynth, NoiseSynth, MetalSynth, MonoSynth)
+ * - Tone.Transport for global timing
+ * - Tone.Channel for per-slot routing
+ * - Proper audio context initialization
  */
 
 class AudioEngine {
     constructor() {
-        this.ctx = null;
-        this.masterGain = null;
-        this.activeSources = new Map(); // slotId -> { source, gain, type }
+        this.initialized = false;
+        this.synths = new Map();  // slotId -> synth instance
+        this.channels = new Map(); // slotId -> Tone.Channel
     }
 
     /**
-     * Initialize audio context (must be called after user interaction)
+     * Initialize Tone.js (must be called after user interaction)
      */
-    init() {
-        if (this.ctx) return;
+    async init() {
+        if (this.initialized) return;
 
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.masterGain = this.ctx.createGain();
-        this.masterGain.connect(this.ctx.destination);
-        this.masterGain.gain.value = 0.8;
+        await Tone.start();
+        console.log('[AudioEngine] Tone.js started, context state:', Tone.context.state);
 
-        console.log('[AudioEngine] Initialized, sample rate:', this.ctx.sampleRate);
+        // Set global BPM
+        Tone.Transport.bpm.value = 120;
+
+        this.initialized = true;
     }
 
     /**
-     * Get current audio time (for scheduling)
+     * Create synths for all sound types
+     * Each synth is connected to its own channel for independent volume control
      */
-    get currentTime() {
-        return this.ctx ? this.ctx.currentTime : 0;
-    }
+    createSynth(soundName, slotId) {
+        // Create a channel for this slot (allows mute/solo later)
+        const channel = new Tone.Channel({ volume: 0 }).toDestination();
+        this.channels.set(slotId, channel);
 
-    /**
-     * Create a noise buffer for percussion
-     */
-    createNoiseBuffer(duration = 0.5) {
-        const bufferSize = this.ctx.sampleRate * duration;
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const output = buffer.getChannelData(0);
+        let synth;
 
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
+        switch (soundName) {
+            case 'kick':
+                // MembraneSynth: Pitched membrane with quick decay (kick drums)
+                synth = new Tone.MembraneSynth({
+                    pitchDecay: 0.05,
+                    octaves: 6,
+                    oscillator: { type: 'sine' },
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.3,
+                        sustain: 0,
+                        release: 0.1
+                    }
+                }).connect(channel);
+                break;
+
+            case 'snare':
+                // NoiseSynth: Filtered noise burst (snare, hats)
+                synth = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.15,
+                        sustain: 0,
+                        release: 0.05
+                    }
+                }).connect(channel);
+                // Add bandpass filter for snare character
+                const snareFilter = new Tone.Filter(3000, 'bandpass').connect(channel);
+                synth.connect(snareFilter);
+                break;
+
+            case 'hihat':
+                // MetalSynth: Metallic, inharmonic tones (hats, cymbals)
+                synth = new Tone.MetalSynth({
+                    frequency: 200,
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.08,
+                        release: 0.01
+                    },
+                    harmonicity: 5.1,
+                    modulationIndex: 32,
+                    resonance: 4000,
+                    octaves: 1.5
+                }).connect(channel);
+                synth.volume.value = -10; // Hats are quieter
+                break;
+
+            case 'bass':
+                // MonoSynth: Single oscillator with filter (bass, leads)
+                synth = new Tone.MonoSynth({
+                    oscillator: { type: 'triangle' },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.3,
+                        sustain: 0.4,
+                        release: 0.2
+                    },
+                    filterEnvelope: {
+                        attack: 0.01,
+                        decay: 0.2,
+                        sustain: 0.5,
+                        release: 0.2,
+                        baseFrequency: 200,
+                        octaves: 2
+                    }
+                }).connect(channel);
+                break;
+
+            case 'lead':
+                // MonoSynth with square wave for bright leads
+                synth = new Tone.MonoSynth({
+                    oscillator: { type: 'square' },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.2,
+                        sustain: 0.3,
+                        release: 0.3
+                    },
+                    filterEnvelope: {
+                        attack: 0.01,
+                        decay: 0.1,
+                        sustain: 0.8,
+                        release: 0.2,
+                        baseFrequency: 400,
+                        octaves: 3
+                    }
+                }).connect(channel);
+                synth.volume.value = -8; // Square waves are loud
+                break;
+
+            default:
+                console.warn('[AudioEngine] Unknown sound type:', soundName);
+                return null;
         }
 
-        return buffer;
+        this.synths.set(slotId, { synth, soundName });
+        return synth;
     }
 
     /**
-     * Play a kick drum sound
-     * Technique: Sine wave with rapid pitch drop
+     * Trigger a synth to play a note
+     * @param {number} slotId - Slot identifier
+     * @param {string|number} note - Note to play (e.g., 'C2' for bass, or frequency)
+     * @param {string} duration - Duration (e.g., '8n' for eighth note)
+     * @param {number} time - When to play (Tone.Transport time)
      */
-    playKick(time = this.currentTime) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+    triggerSound(slotId, note, duration = '8n', time) {
+        const synthData = this.synths.get(slotId);
+        if (!synthData) return;
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(150, time);
-        osc.frequency.exponentialRampToValueAtTime(55, time + 0.1);
+        const { synth, soundName } = synthData;
 
-        gain.gain.setValueAtTime(0.8, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
-
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-
-        osc.start(time);
-        osc.stop(time + 0.3);
-
-        return { osc, gain };
-    }
-
-    /**
-     * Play a snare drum sound
-     * Technique: Filtered white noise burst
-     */
-    playSnare(time = this.currentTime) {
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = this.createNoiseBuffer(0.2);
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 3000;
-        filter.Q.value = 1;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.5, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-
-        noise.start(time);
-        noise.stop(time + 0.15);
-
-        return { noise, gain };
-    }
-
-    /**
-     * Play a hi-hat sound
-     * Technique: High-passed white noise, very short
-     */
-    playHiHat(time = this.currentTime) {
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = this.createNoiseBuffer(0.1);
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'highpass';
-        filter.frequency.value = 7000;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.3, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-
-        noise.start(time);
-        noise.stop(time + 0.08);
-
-        return { noise, gain };
-    }
-
-    /**
-     * Play a bass note
-     * Technique: Triangle wave for warm, round tone
-     */
-    playBass(frequency, time = this.currentTime, duration = 0.3) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(frequency, time);
-
-        gain.gain.setValueAtTime(0.4, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-
-        osc.start(time);
-        osc.stop(time + duration);
-
-        return { osc, gain };
-    }
-
-    /**
-     * Play a lead note
-     * Technique: Square wave for bright, cutting tone
-     */
-    playLead(frequency, time = this.currentTime, duration = 0.3) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(frequency, time);
-
-        // Lower volume for square wave (harsh)
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-
-        osc.start(time);
-        osc.stop(time + duration);
-
-        return { osc, gain };
-    }
-
-    /**
-     * Start a continuous sound for a slot (Phase 1: drums only)
-     * Returns control object for later manipulation
-     */
-    startContinuousNoise(type, slotId) {
-        if (this.activeSources.has(slotId)) {
-            this.stopSlot(slotId);
-        }
-
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = this.createNoiseBuffer(2);
-        noise.loop = true;
-
-        const filter = this.ctx.createBiquadFilter();
-        if (type === 'hihat') {
-            filter.type = 'highpass';
-            filter.frequency.value = 5000;
+        // Different trigger methods for different synth types
+        if (soundName === 'kick') {
+            synth.triggerAttackRelease('C1', duration, time);
+        } else if (soundName === 'snare' || soundName === 'hihat') {
+            synth.triggerAttackRelease(duration, time);
         } else {
-            filter.type = 'bandpass';
-            filter.frequency.value = 10000;
-        }
-
-        const gain = this.ctx.createGain();
-        gain.gain.value = 0; // Start silent, sequencer triggers hits
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.masterGain);
-
-        noise.start();
-
-        this.activeSources.set(slotId, { source: noise, gain, type });
-        return { noise, gain };
-    }
-
-    /**
-     * Stop a slot's sound
-     */
-    stopSlot(slotId) {
-        const active = this.activeSources.get(slotId);
-        if (active) {
-            try {
-                active.source.stop();
-            } catch (e) {
-                // Already stopped
-            }
-            this.activeSources.delete(slotId);
+            // Bass and lead need actual notes
+            synth.triggerAttackRelease(note, duration, time);
         }
     }
 
     /**
-     * Stop all sounds
+     * Get the synth for a slot
      */
-    stopAll() {
-        for (const slotId of this.activeSources.keys()) {
-            this.stopSlot(slotId);
+    getSynth(slotId) {
+        const data = this.synths.get(slotId);
+        return data ? data.synth : null;
+    }
+
+    /**
+     * Dispose of a synth (clean up)
+     */
+    disposeSynth(slotId) {
+        const synthData = this.synths.get(slotId);
+        if (synthData) {
+            synthData.synth.dispose();
+            this.synths.delete(slotId);
+        }
+
+        const channel = this.channels.get(slotId);
+        if (channel) {
+            channel.dispose();
+            this.channels.delete(slotId);
         }
     }
 
     /**
-     * Check if a slot is active
+     * Dispose all synths
      */
-    isSlotActive(slotId) {
-        return this.activeSources.has(slotId);
+    disposeAll() {
+        for (const slotId of this.synths.keys()) {
+            this.disposeSynth(slotId);
+        }
+    }
+
+    /**
+     * Mute a slot (Phase 2 feature, but set up the infrastructure)
+     */
+    muteSlot(slotId, muted) {
+        const channel = this.channels.get(slotId);
+        if (channel) {
+            channel.mute = muted;
+        }
+    }
+
+    /**
+     * Solo a slot (mute all others)
+     */
+    soloSlot(slotId, solo) {
+        const channel = this.channels.get(slotId);
+        if (channel) {
+            channel.solo = solo;
+        }
+    }
+
+    /**
+     * Set slot volume (in dB)
+     */
+    setSlotVolume(slotId, volumeDb) {
+        const channel = this.channels.get(slotId);
+        if (channel) {
+            channel.volume.value = volumeDb;
+        }
     }
 }
 

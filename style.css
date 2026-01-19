@@ -1,4 +1,4 @@
-/* wrenchbox - Phase 1 Styles */
+/* wrenchbox - Phase 1 Styles (Tone.js) */
 
 * {
     margin: 0;
@@ -34,6 +34,54 @@ body {
     color: var(--text);
 }
 
+/* Start Overlay - Required to unlock AudioContext */
+.start-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.start-content {
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+}
+
+.start-content h1 {
+    font-size: 3em;
+    color: var(--accent);
+    text-transform: lowercase;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+}
+
+.start-content p {
+    color: var(--text-muted);
+    font-size: 1.2em;
+    margin-bottom: 30px;
+}
+
+.start-icon {
+    font-size: 4em;
+    color: var(--accent);
+    animation: pulse-start 1.5s infinite;
+}
+
+@keyframes pulse-start {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* App Container */
 .app {
     display: flex;
     flex-direction: column;
@@ -57,6 +105,21 @@ body {
     color: var(--accent);
     text-transform: lowercase;
     letter-spacing: 2px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.bpm-display {
+    background: rgba(0,0,0,0.3);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: var(--accent);
 }
 
 /* Buttons */
@@ -156,6 +219,23 @@ body {
 .slot[data-type="melodies"].active { border-color: var(--color-melodies); box-shadow: 0 0 30px rgba(68, 255, 136, 0.5); }
 .slot[data-type="voices"].active { border-color: var(--color-voices); box-shadow: 0 0 30px rgba(255, 221, 68, 0.5); }
 .slot[data-type="bass"].active { border-color: var(--color-bass); box-shadow: 0 0 30px rgba(255, 136, 255, 0.5); }
+
+/* Beat indicator on active slots */
+.slot.active .beat-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.05s;
+}
+
+.slot.active .beat-indicator.flash {
+    opacity: 1;
+}
 
 /* Palette - Sound Icons (Phase 1: just visual, Phase 2: draggable) */
 .palette {

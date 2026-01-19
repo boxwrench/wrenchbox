@@ -1,17 +1,17 @@
 /**
  * wrenchbox - Main Application
- * Phase 1: Click-to-toggle interface
+ * Phase 1: Click-to-toggle interface with Tone.js
  *
  * Learning goals:
  * - DOM manipulation
  * - Event handling
- * - State management (simple)
- * - Connecting UI to audio engine
+ * - Async audio initialization
+ * - Connecting UI to Tone.js-based audio engine
  */
 
 // App state
 const state = {
-    slots: [], // { id, soundName, element }
+    slots: [], // { id, soundName, element, active }
     initialized: false
 };
 
@@ -31,24 +31,50 @@ const SOUND_ICONS = {
 };
 
 /**
- * Initialize the app
+ * Initialize the app (called on DOMContentLoaded)
  */
 function init() {
-    // Create sequencer (needs audioEngine)
-    window.sequencer = new Sequencer(audioEngine, CONFIG.BPM);
+    // Set up the start overlay click handler
+    const overlay = document.getElementById('startOverlay');
+    overlay.addEventListener('click', handleStart);
 
-    // Build UI
-    createSlots();
-    createSoundIcons();
-    setupEventListeners();
+    console.log('[wrenchbox] Ready - click to start');
+}
 
-    // Add phase badge
-    const badge = document.createElement('div');
-    badge.className = 'phase-badge';
-    badge.textContent = 'Phase 1: Foundation';
-    document.body.appendChild(badge);
+/**
+ * Handle start overlay click - initialize audio and show app
+ */
+async function handleStart() {
+    if (state.initialized) return;
 
-    console.log('[wrenchbox] Initialized');
+    const overlay = document.getElementById('startOverlay');
+    const app = document.getElementById('app');
+
+    try {
+        // Initialize Tone.js audio context (must be after user gesture)
+        await audioEngine.init();
+
+        // Create sequencer with audio engine
+        window.sequencer = new Sequencer(audioEngine, CONFIG.BPM);
+        sequencer.init();
+
+        // Build UI
+        createSlots();
+        createSoundIcons();
+        setupEventListeners();
+
+        // Update BPM display
+        updateBpmDisplay();
+
+        // Hide overlay, show app
+        overlay.style.display = 'none';
+        app.style.display = 'flex';
+
+        state.initialized = true;
+        console.log('[wrenchbox] Initialized with Tone.js');
+    } catch (err) {
+        console.error('[wrenchbox] Failed to initialize audio:', err);
+    }
 }
 
 /**
@@ -73,6 +99,7 @@ function createSlots() {
             slot.innerHTML = `
                 ${SOUND_ICONS[soundName]}
                 <span class="slot-label">${soundName}</span>
+                <div class="beat-indicator"></div>
             `;
         } else {
             slot.innerHTML = `
@@ -131,28 +158,25 @@ function setupEventListeners() {
         resetAll();
     });
 
-    // Initialize audio on first interaction (browser requirement)
-    document.body.addEventListener('click', initAudio, { once: true });
-    document.body.addEventListener('keydown', initAudio, { once: true });
-}
-
-/**
- * Initialize audio context (required after user interaction)
- */
-function initAudio() {
-    if (!state.initialized) {
-        audioEngine.init();
-        state.initialized = true;
-        console.log('[wrenchbox] Audio initialized');
-    }
+    // Keyboard shortcuts (1-5 for slots, space for reset)
+    document.addEventListener('keydown', (e) => {
+        const key = e.key;
+        if (key >= '1' && key <= '7') {
+            const slotId = parseInt(key) - 1;
+            if (slotId < state.slots.length) {
+                handleSlotClick(slotId);
+            }
+        } else if (key === ' ' || key === 'Escape') {
+            e.preventDefault();
+            resetAll();
+        }
+    });
 }
 
 /**
  * Handle slot click - toggle sound on/off
  */
 function handleSlotClick(slotId) {
-    initAudio();
-
     const slot = state.slots[slotId];
     if (!slot || !slot.soundName) return;
 
@@ -173,6 +197,8 @@ function handleSlotClick(slotId) {
  * Reset all slots
  */
 function resetAll() {
+    if (!state.initialized) return;
+
     sequencer.reset();
 
     for (const slot of state.slots) {
@@ -181,6 +207,16 @@ function resetAll() {
     }
 
     console.log('[wrenchbox] Reset');
+}
+
+/**
+ * Update BPM display
+ */
+function updateBpmDisplay() {
+    const display = document.getElementById('bpmDisplay');
+    if (display) {
+        display.textContent = `${CONFIG.BPM} BPM`;
+    }
 }
 
 // Start app when DOM ready
