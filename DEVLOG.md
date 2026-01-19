@@ -237,4 +237,26 @@ Phase Progression:
 
 ---
 
-*Last updated: 2026-01-18*
+### 2026-01-19 - Phase 3 & 4 Completion: Data-Driven Audio & Assets
+**What was done:**
+- **Fixed Audio State Loss Bug**:
+  - Diagnosed `Tone.Transport.scheduleOnce` failing on looped transport.
+  - Replaced with direct `Tone.Sequence` and `Tone.Player` sync, which aligns naturally to Transport.
+  - Verified routing persistence for all slots (0-6).
+- **Audio Polish**:
+  - Tuned `MetalSynth` (Hi-Hat) for a tighter, crisper "tsk" sound (shorter decay/release, adjusted modulation).
+- **Asset Pipeline**:
+  - Generated instrument icons (neon style).
+  - Created Python script (`make_icons.py`) to programmatically remove black backgrounds for transparency.
+  - Verified icons load correctly in the UI.
+
+**Technical Decisions:**
+- **Synchronous startPattern**: Instead of scheduling a callback (which can be dropped if the time is "in the past" relative to loop start), we now instantiate the source immediately. `Tone.Sequence.start(0)` ensures musical timing is correct regardless of when the object is created.
+- **Background Removal**: Since image generation often produces solid backgrounds, a post-processing script using `PIL` was established as a standard workflow for assets.
+
+**Status:**
+- Phase 3 (Audio Engine) is stable.
+- Phase 4 (Data/Assets) foundations are solid with working Asset Pipeline.
+- Ready for deeper Horror Mode integrations.
+
+*Last updated: 2026-01-19*
