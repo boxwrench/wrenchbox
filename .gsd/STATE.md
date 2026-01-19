@@ -1,15 +1,15 @@
-# State - Asset Polish & Handover
+# State - Documentation & Polish Complete
 
 ## Current Position
 - **Phase**: 4 (Assets & Polish)
-- **Task**: Audit and improve Modding Guide
-- **Status**: Active (resumed 2026-01-19T10:51:27-08:00)
+- **Task**: Documentation audit and improvement
+- **Status**: Paused at 2026-01-19T12:32:18-08:00
 
 ## Last Session Summary
-Resolved missing instrument icons. Generated 6 new "neon on black" icons for kick, snare, hi-hat, bass, lead, and cursed skull. Created a Python script (`make_icons.py`) to programmatically strip the black backgrounds for transparency. Verified via browser automation that icons load correctly and the full band plays without state loss.
+Completed comprehensive audit and upgrade of the Modding Guide. Added AI-first workflows for both visual assets (icons) and audio loops. Introduced music theory section ("Designing Your Band") to teach users about frequency layering, palette balance, and composition best practices. Fixed background gradient configuration issue discovered during testing. All changes committed and pushed.
 
 ## In-Progress Work
-- None (All changes committed)
+- None (All changes committed and pushed)
 
 ## Blockers
 - None
@@ -18,13 +18,17 @@ Resolved missing instrument icons. Generated 6 new "neon on black" icons for kic
 ### Decisions Made
 - **Asset Pipeline**: Used Python (`PIL`) to remove black backgrounds from AI-generated icons instead of struggling with transparency generation limitations. This acts as a reliable pipeline for future assets.
 - **Audio Tuning**: Tighter envelope on hi-hat (decay 0.05s) significantly improved the "crispness" of the beat.
+- **Documentation Strategy**: Modding Guide now emphasizes AI tools (Suno, Udio, Bing Image Creator) as the primary workflow, with traditional tools as alternatives. This aligns with modern creator workflows.
+- **Transparency Workaround**: Documented "faking transparency" by matching icon backgrounds to theme backgrounds, avoiding the need for alpha channel editing.
+- **Composition Education**: Added Step 5 "Designing Your Band" to prevent common mistakes (e.g., 20 drum beats, clashing frequencies).
 
 ### Current Hypothesis
 - The system is now stable enough for the **Bonus System** logic (checking active slots) and **Horror Mode** depth.
+- Documentation is production-ready for new users.
 
 ### Files of Interest
-- `src/main.js`: Handles icon creation in `createSoundIcons`.
-- `themes/default/theme.json`: References the new icon paths.
+- `docs/MODDING_GUIDE.md`: Comprehensive guide with 11 steps, now includes composition theory.
+- `themes/default/theme.json`: References the new icon paths and demonstrates proper configuration.
 - `src/data/ThemeLoader.js`: Loads the assets.
 
 ## Next Steps
