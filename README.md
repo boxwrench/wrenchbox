@@ -2,7 +2,7 @@
 
 A music creation engine inspired by Incredibox and Sprunki. Drag sounds onto characters to build beats, unlock bonuses with combos, and watch things get weird with horror mode.
 
-**[Try it live](https://boxwrench.github.io/wrenchbox/)** (coming soon)
+**[Try it live](https://boxwrench.github.io/wrenchbox/)**
 
 ## Features
 
