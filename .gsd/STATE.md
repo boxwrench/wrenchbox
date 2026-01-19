@@ -1,36 +1,33 @@
-# State - Fix Audio State Loss
+# State - Asset Polish & Handover
 
 ## Current Position
-- **Phase**: 4 (Final Verification)
-- **Task**: Polished audio & finalized milestone
-- **Status**: Done (2026-01-19T10:16:17-08:00)
+- **Phase**: 4 (Assets & Polish)
+- **Task**: Fix broken instrument icons and finalize visual assets
+- **Status**: Paused at 2026-01-19T10:47:17-08:00
 
 ## Last Session Summary
-Debugged `AudioEngine` state loss. Root cause was `Tone.Transport.scheduleOnce` failing to fire callbacks for slots > 0 because `Tone.Transport` loops (4m) and the calculated start time was outside the immediate execution window or lost due to looping logic. **Fixed** by removing `scheduleOnce` and allowing `Tone.Sequence` and `Tone.Player` to handle their own sync, which is the correct Tone.js pattern.
+Resolved missing instrument icons. Generated 6 new "neon on black" icons for kick, snare, hi-hat, bass, lead, and cursed skull. Created a Python script (`make_icons.py`) to programmatically strip the black backgrounds for transparency. Verified via browser automation that icons load correctly and the full band plays without state loss.
 
 ## In-Progress Work
-- `src/main.js`: Fixed `startPatternQuantized` to execute immediately.
-- `src/core/AudioEngine.js`: Verified state persistence.
+- None (All changes committed)
 
-## Blockers
 ## Blockers
 - None
 
 ## Context Dump
 ### Decisions Made
-- **Safe Routing**: Decided to remove `channel.disconnect()` from `HorrorEffects` and instead instantiate fresh channels without destinations in `AudioEngine`. This prevents "AudioContext not started" or routing loops.
-- **Instrument Persistence**: We observed that Slot 0 works, but 1-3 disappear from internal maps. This suggests a reset or overwrite happening somewhere.
+- **Asset Pipeline**: Used Python (`PIL`) to remove black backgrounds from AI-generated icons instead of struggling with transparency generation limitations. This acts as a reliable pipeline for future assets.
+- **Audio Tuning**: Tighter envelope on hi-hat (decay 0.05s) significantly improved the "crispness" of the beat.
 
 ### Current Hypothesis
-- **Race Condition**: `assignSoundToSlot` calls `startPattern`, which calls `createSource`. If `reset()` or `disposeSlot()` is triggered inadvertently (maybe by the `DragDrop` logic detecting a "move" vs "copy"?), it clears the maps.
-- **Type Mismatch**: `slotId` passed as string "1" vs number 1 might be causing Map lookups to fail or overwrite wrong keys.
+- The system is now stable enough for the **Bonus System** logic (checking active slots) and **Horror Mode** depth.
 
 ### Files of Interest
-- `src/core/AudioEngine.js`: The `slots` Map resides here.
-- `src/main.js`: Manages the UI state `state.slots`.
-- `src/core/Sequencer.js`: Manages `activeSlots`.
+- `src/main.js`: Handles icon creation in `createSoundIcons`.
+- `themes/default/theme.json`: References the new icon paths.
+- `src/data/ThemeLoader.js`: Loads the assets.
 
 ## Next Steps
-1. **Execute Logging Plan**: Implement the diagnostic logging in `implementation_plan.md`.
-2. **Verify Types**: Check if `slotId` is consistently a specific type (Number).
-3. **Trace Lifecycle**: creating source -> registering -> (accidental disposal?) -> final state.
+1. **Bonus System**: Implement logic to detect specific instrument combos (e.g., "Full Beat").
+2. **Horror Mode**: Enable the `CorruptionManager` and test visual/audio degradation.
+3. **Samples**: Consider moving from Synths to Samples if higher fidelity is needed (infrastructure is ready).
