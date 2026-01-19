@@ -1,45 +1,37 @@
-# STATE.md
+# State - Fix Audio State Loss
 
 ## Current Position
-- **Phase**: Post-Phase 6 Debugging (Regression Fixes)
-- **Task**: Restoring polyphony and correcting horror audio routing
-- **Status**: Paused at 2026-01-19 09:27
+- **Phase**: 1 (Diagnostics & State Logging)
+- **Task**: Debugging audio state loss and routing bug
+- **Status**: Paused at 2026-01-19T10:00:44-08:00
 
 ## Last Session Summary
-- **Audio Overhaul**: Refactored `AudioEngine.js` to use `Tone.Player.sync()` and `start(0)` for professional-grade loop synchronization.
-- **Rhythm Fixes**: Implemented smart snapping in `SampleManager.js` to eliminate loop seams. Restored quarter-note quantization for musical instrument entries.
-- **Regression Fixes**: 
-  - Fixed self-referential initialization crash in `HorrorEffects.js`.
-  - Boosted Kick synth (freq C1 -> C2, volume +3dB) for audibility on small speakers.
-  - Temporarily bypassed `HorrorEffects` audio routing to restore multi-instrument polyphony.
+Diagnosed a critical bug where `AudioEngine` internal state loses track of all slots except active slot 0. Refactored `createSource` to avoid aggressive `channel.disconnect()` calls, but the state loss persists. Created a full GSD plan (SPEC, ROADMAP, STATE) to address this.
 
 ## In-Progress Work
-- Audio polyphony is restored but `HorrorEffects` audio distortion is currently bypassed in `AudioEngine.js` to ensure the core mixer works.
-- Files modified: `AudioEngine.js`, `Sequencer.js`, `SampleManager.js`, `main.js`, `HorrorEffects.js`, `theme.json`.
+- `AudioEngine.js`: Refactored `createSource` (uncommitted fixes).
+- `HorrorEffects.js`: Removed `disconnect()` (uncommitted fixes).
+- `implementation_plan.md`: Created plan for logging.
 
 ## Blockers
-- **Audio Routing Conflict**: The `channel.disconnect()` in `HorrorEffects.createEffectChain()` was breaking the audio path for subsequent instruments when multiple items were added to the mix.
+- **Root Cause Unknown**: Why does `state.slots` in `main.js` have 4 items, but `audioEngine.slots` only have 1?
+- **Silent Failures**: No console errors explain the missing Map entries.
 
 ## Context Dump
-
 ### Decisions Made
-- **Sync Over Scheduling**: Switched from `scheduleOnce` to `.sync()` for looping players. This and Transport-aligned starts (0) ensure perfect phase consistency without complex manual math.
-- **Safety First**: Opted to bypass horror audio effects rather than leaving the user with a broken (silent) mixer.
-
-### Approaches Tried
-- **Manual Quantized Starts**: Failed (caused jitter/off-beat feeling).
-- **Direct Effect Routing**: Failed (caused silence for 2nd+ instruments due to node disconnection conflicts).
-- **Transport Sync**: **Succeeded** - perfectly aligns loops.
+- **Safe Routing**: Decided to remove `channel.disconnect()` from `HorrorEffects` and instead instantiate fresh channels without destinations in `AudioEngine`. This prevents "AudioContext not started" or routing loops.
+- **Instrument Persistence**: We observed that Slot 0 works, but 1-3 disappear from internal maps. This suggests a reset or overwrite happening somewhere.
 
 ### Current Hypothesis
-The Tone.js `Channel` nodes being reused or disconnected in `HorrorEffects` were not being reconnected properly to the global filter/destination for any instrument after the first one.
+- **Race Condition**: `assignSoundToSlot` calls `startPattern`, which calls `createSource`. If `reset()` or `disposeSlot()` is triggered inadvertently (maybe by the `DragDrop` logic detecting a "move" vs "copy"?), it clears the maps.
+- **Type Mismatch**: `slotId` passed as string "1" vs number 1 might be causing Map lookups to fail or overwrite wrong keys.
 
 ### Files of Interest
-- `src/core/AudioEngine.js`: Central routing hub.
-- `src/core/HorrorEffects.js`: The source of routing disconnections.
-- `src/core/SampleManager.js`: Handles loop lengths and transients.
+- `src/core/AudioEngine.js`: The `slots` Map resides here.
+- `src/main.js`: Manages the UI state `state.slots`.
+- `src/core/Sequencer.js`: Manages `activeSlots`.
 
 ## Next Steps
-1. **Verify Polyphony**: Confirm user can hear all tracks (Snare, Hi-Hat, Kick, Bass) together.
-2. **Proper Effects Routing**: Re-implement `HorrorEffects` using a "Bus" or ensuring `connect()` logic doesn't orphan the channel.
-3. **Volume Balancing**: Review mix level of all instruments after sync fixes.
+1. **Execute Logging Plan**: Implement the diagnostic logging in `implementation_plan.md`.
+2. **Verify Types**: Check if `slotId` is consistently a specific type (Number).
+3. **Trace Lifecycle**: creating source -> registering -> (accidental disposal?) -> final state.
