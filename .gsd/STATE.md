@@ -1,56 +1,45 @@
 # STATE.md
 
 ## Current Position
-
-**Status:** Project codebase mapped  
-**Phase:** Brownfield project analysis complete  
-**Next Step:** Create GSD project with `/new-project` workflow
+- **Phase**: Post-Phase 6 Debugging (Regression Fixes)
+- **Task**: Restoring polyphony and correcting horror audio routing
+- **Status**: Paused at 2026-01-19 09:27
 
 ## Last Session Summary
+- **Audio Overhaul**: Refactored `AudioEngine.js` to use `Tone.Player.sync()` and `start(0)` for professional-grade loop synchronization.
+- **Rhythm Fixes**: Implemented smart snapping in `SampleManager.js` to eliminate loop seams. Restored quarter-note quantization for musical instrument entries.
+- **Regression Fixes**: 
+  - Fixed self-referential initialization crash in `HorrorEffects.js`.
+  - Boosted Kick synth (freq C1 -> C2, volume +3dB) for audibility on small speakers.
+  - Temporarily bypassed `HorrorEffects` audio routing to restore multi-instrument polyphony.
 
-Codebase mapping complete via `/map` workflow:
-- Analyzed wrenchbox - a completed browser-based music creation engine
-- Identified 12 core source files across 3 layers (core, ui, data)
-- Documented component architecture, data flow, and integration points
-- No technical issues found - project is complete and functional (Phases 1-6 done)
-- Single dependency: Tone.js 14.8.49 (loaded via CDN)
+## In-Progress Work
+- Audio polyphony is restored but `HorrorEffects` audio distortion is currently bypassed in `AudioEngine.js` to ensure the core mixer works.
+- Files modified: `AudioEngine.js`, `Sequencer.js`, `SampleManager.js`, `main.js`, `HorrorEffects.js`, `theme.json`.
 
-## Project Overview
+## Blockers
+- **Audio Routing Conflict**: The `channel.disconnect()` in `HorrorEffects.createEffectChain()` was breaking the audio path for subsequent instruments when multiple items were added to the mix.
 
-**wrenchbox** is a learning-focused music creation engine inspired by Incredibox and Sprunki:
-- 6 completed development phases (Foundation → Theming)
-- Vanilla JavaScript + Tone.js audio engine
-- Drag-and-drop sound mixing with horror mode corruption
-- Data-driven theming via JSON configuration
-- No build tools - runs directly in browser
+## Context Dump
 
-### Key Statistics
-- ~3,000 lines of source code
-- 12 core JavaScript files
-- 1 external dependency (Tone.js CDN)
-- 0 TODO/FIXME items found
-- 6/7 phases complete (Phase 7 is polish/recording, marked future)
+### Decisions Made
+- **Sync Over Scheduling**: Switched from `scheduleOnce` to `.sync()` for looping players. This and Transport-aligned starts (0) ensure perfect phase consistency without complex manual math.
+- **Safety First**: Opted to bypass horror audio effects rather than leaving the user with a broken (silent) mixer.
 
-## Files Created
+### Approaches Tried
+- **Manual Quantized Starts**: Failed (caused jitter/off-beat feeling).
+- **Direct Effect Routing**: Failed (caused silence for 2nd+ instruments due to node disconnection conflicts).
+- **Transport Sync**: **Succeeded** - perfectly aligns loops.
 
-- `.gsd/ARCHITECTURE.md` - System design, components, data flow (370+ lines)
-- `.gsd/STACK.md` - Dependencies, audio specs, technical debt (250+ lines)
-- `.gsd/STATE.md` - This file
+### Current Hypothesis
+The Tone.js `Channel` nodes being reused or disconnected in `HorrorEffects` were not being reconnected properly to the global filter/destination for any instrument after the first one.
+
+### Files of Interest
+- `src/core/AudioEngine.js`: Central routing hub.
+- `src/core/HorrorEffects.js`: The source of routing disconnections.
+- `src/core/SampleManager.js`: Handles loop lengths and transients.
 
 ## Next Steps
-
-1. Commit mapping documentation to git
-2. Resume `/new-project` workflow (user initiated before mapping)
-3. Begin deep questioning phase to define new GSD project goals
-4. Create SPEC.md based on user's objectives
-5. Create ROADMAP.md with executable phases
-
-## Notes
-
-- Brownfield project detected, user opted to map first
-- Project structure already excellent (phase-based development)
-- Existing DEVLOG.md and PLAN.md can inform GSD setup
-- Consider whether this is:
-  - **New feature addition** to wrenchbox (Phase 7 work)
-  - **New project** using wrenchbox as reference
-  - **Refactoring** wrenchbox (e.g., add build tools, TypeScript)
+1. **Verify Polyphony**: Confirm user can hear all tracks (Snare, Hi-Hat, Kick, Bass) together.
+2. **Proper Effects Routing**: Re-implement `HorrorEffects` using a "Bus" or ensuring `connect()` logic doesn't orphan the channel.
+3. **Volume Balancing**: Review mix level of all instruments after sync fixes.
