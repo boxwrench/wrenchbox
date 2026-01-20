@@ -140,3 +140,28 @@ Finalize asset generation and fix background loading for Robot Futurism mod.
 
 ### Status
 **PROJECT COMPLETE**: Robot Futurism Mod is fully functional.
+
+## Session: 2026-01-20 07:51
+
+### Objective
+Deploy demo to GitHub Pages.
+
+### Accomplished
+- [x] Pushed all code and assets to GitHub (`main` branch).
+- [x] Updated README.md with live demo link.
+- [x] Provided step-by-step GitHub Pages activation instructions.
+
+### Verification
+- [x] Git push successful (commit `1a54898`).
+- [ ] GitHub Pages live (pending user action in Settings).
+
+### Paused Because
+User requested pause.
+
+### Handoff Notes
+The repo is fully pushed. User just needs to:
+1. Go to GitHub → Settings → Pages
+2. Set Source to `main` / `root`
+3. Save
+
+Demo URL: `https://boxwrench.github.io/wrenchbox/`
